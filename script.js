@@ -1,11 +1,11 @@
+// Database nikalna memory se
 let khataRegister = JSON.parse(localStorage.getItem("proKhataV5")) || {};
 let savedShopName = localStorage.getItem("myShopName") || "Apni Dukan";
 
-/* ==========================================================
-   🛠️ CUSTOM POPUP (MODAL) CONTROLLERS 
-========================================================== */
+/* ==========================================
+   🛠️ 1. CUSTOM POPUP (MODALS) CONTROLS
+========================================== */
 
-// 1. Koi bhi modal open ho, use band karne ka function
 function closeAllModals() {
     document.getElementById("customAlertOverlay").style.display = "none";
     document.getElementById("singleInputOverlay").style.display = "none";
@@ -13,13 +13,11 @@ function closeAllModals() {
     document.getElementById("confirmOverlay").style.display = "none";
 }
 
-// 2. Galti dikhane wala Popup
 function showError(message) {
     document.getElementById("customAlertMessage").innerText = message;
     document.getElementById("customAlertOverlay").style.display = "flex";
 }
 
-// 3. Ek Input wala Popup (Shop Name / Customer Name ke liye)
 function showSingleInputModal(title, defaultValue, callbackFunction) {
     document.getElementById("singleInputTitle").innerText = title;
     let inputField = document.getElementById("singleInputValue");
@@ -28,15 +26,13 @@ function showSingleInputModal(title, defaultValue, callbackFunction) {
     document.getElementById("singleInputOverlay").style.display = "flex";
     inputField.focus();
 
-    // Jab OK (Save) button dabaya jaye
     document.getElementById("btnSingleSave").onclick = function() {
         let value = inputField.value.trim();
-        closeAllModals(); // Popup band karo
-        callbackFunction(value); // Jo kaam karna tha wo karo
+        closeAllModals();
+        callbackFunction(value);
     };
 }
 
-// 4. Do Input wala Popup (Naya Udhar / Edit ke liye)
 function showDoubleInputModal(title, placeholder1, placeholder2, val1, val2, callbackFunction) {
     document.getElementById("doubleInputTitle").innerText = title;
     
@@ -59,7 +55,6 @@ function showDoubleInputModal(title, placeholder1, placeholder2, val1, val2, cal
     };
 }
 
-// 5. Delete Confirm karne wala Popup
 function showConfirmModal(message, callbackFunction) {
     document.getElementById("confirmTitle").innerText = message;
     document.getElementById("confirmOverlay").style.display = "flex";
@@ -70,16 +65,130 @@ function showConfirmModal(message, callbackFunction) {
     };
 }
 
+/* ==========================================
+   🎙️ 2. VOICE AI (MIC) LOGIC
+========================================== */
 
-/* ==========================================================
-   🛒 MAIN APP LOGIC 
-========================================================== */
+function startVoiceRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        showError("Aapka browser Voice feature support nahi karta. Kripya Chrome use karein.");
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'hi-IN'; // Hindi support
+
+    const micBtn = document.getElementById("micBtn");
+    const micStatus = document.getElementById("micStatus");
+
+    recognition.onstart = function() {
+        micBtn.classList.add("recording");
+        micBtn.innerText = "🎙️ Sun raha hoon...";
+        micStatus.innerText = "Boliye: 'Rihan ke khate mein 50 rupiye likh do sabun ke'";
+    };
+
+    recognition.onspeechend = function() {
+        micBtn.classList.remove("recording");
+        micBtn.innerText = "🎙️ Bolkar Likhain";
+        micStatus.innerText = "Soch raha hoon...";
+    };
+
+    recognition.onresult = function(event) {
+        let transcript = event.results[0][0].transcript.toLowerCase();
+        micStatus.innerText = `Aapne bola: "${transcript}"`;
+        processVoiceCommand(transcript);
+    };
+
+    recognition.onerror = function() {
+        micBtn.classList.remove("recording");
+        micBtn.innerText = "🎙️ Bolkar Likhain";
+        showError("Theek se sunai nahi diya. Kripya dubara boliye!");
+    };
+
+    recognition.start();
+}
+
+function processVoiceCommand(text) {
+    // Paise nikalna
+    let amountMatch = text.match(/\d+/);
+    if (!amountMatch) {
+        showError(`Paise samajh nahi aaye.\nAapne bola: "${text}"`); return;
+    }
+    let money = Number(amountMatch[0]);
+
+    // Type nikalna
+    let type = 'udhar';
+    if (text.includes("jama") || text.includes("jamma")) { type = 'jama'; } 
+    else if (text.includes("delete") || text.includes("kaat") || text.includes("hata")) { type = 'delete'; }
+
+    // Naam nikalna
+    let foundName = "";
+    let existingCustomers = Object.keys(khataRegister);
+    for (let name of existingCustomers) {
+        if (text.includes(name.toLowerCase())) { foundName = name; break; }
+    }
+
+    if (!foundName) {
+        let nameMatch = text.match(/(.*?)\s+(ke|ka|pe|par|ko|account|mein)/);
+        if (nameMatch && nameMatch[1]) {
+            foundName = nameMatch[1].trim();
+            foundName = foundName.charAt(0).toUpperCase() + foundName.slice(1); // Pehla letter Capital
+        }
+    }
+
+    if (!foundName) {
+        showError(`Grahak ka naam samajh nahi aaya.\nAapne bola: "${text}"`); return;
+    }
+
+    // Samaan nikalna
+    let samaan = text.replace(foundName.toLowerCase(), "")
+                     .replace(money, "")
+                     .replace(/ke|ka|pe|par|ko|account|mein|rupiye|likh|do|karo|jama|delete|kaat|hata|aur/g, "").trim();
+    if (samaan === "") samaan = type === 'udhar' ? "Udhar" : "Jama";
+
+    // Agar delete command hai
+    if (type === 'delete') {
+        showConfirmModal(`Voice AI: Kya aap sach mein "${foundName}" ka pura khata Delete karna chahte hain?`, function() {
+            delete khataRegister[foundName];
+            localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
+            updateScreen();
+        });
+        return;
+    }
+
+    // Modal open karna check karne ke liye
+    let title = `Voice Entry: ${foundName} (${type === 'udhar' ? 'Udhar Likhna' : 'Paise Jama'})`;
+    showDoubleInputModal(title, "₹ Amount", "🛍️ Samaan", money, samaan, function(moneyStr, finalSamaan) {
+        let finalMoney = Number(moneyStr);
+        if (isNaN(finalMoney) || finalMoney <= 0) return;
+        
+        let exactTime = new Date().toLocaleString("en-IN");
+        let uniqueId = Date.now();
+        
+        if (khataRegister[foundName] === undefined) { khataRegister[foundName] = { totalBalance: 0, history:[] }; }
+        
+        if (type === 'udhar') {
+            khataRegister[foundName].totalBalance += finalMoney;
+            khataRegister[foundName].history.push({ id: uniqueId, type: 'udhar', amount: finalMoney, samaan: finalSamaan, time: exactTime });
+        } else {
+            khataRegister[foundName].totalBalance -= finalMoney;
+            khataRegister[foundName].history.push({ id: uniqueId, type: 'jama', amount: finalMoney, samaan: finalSamaan, time: exactTime });
+        }
+        
+        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
+        updateScreen();
+    });
+}
+
+/* ==========================================
+   🛒 3. MAIN APP LOGIC
+========================================== */
 
 function loadShopDetails() {
     document.getElementById("shopNameDisplay").innerText = savedShopName;
 }
 
-// 🌟 FIX: Ab Dukan ka naam badalne ke liye Center Popup aayega!
 function editShopName() {
     showSingleInputModal("Dukan ka naya naam dalen:", savedShopName, function(nayaNaam) {
         if (nayaNaam !== "") {
@@ -92,9 +201,7 @@ function editShopName() {
 
 function calculateShopTotal() {
     let totalDukanKaUdhar = 0;
-    for (let grahak in khataRegister) {
-        totalDukanKaUdhar += khataRegister[grahak].totalBalance;
-    }
+    for (let grahak in khataRegister) { totalDukanKaUdhar += khataRegister[grahak].totalBalance; }
     document.getElementById("totalShopBalance").innerText = "₹" + totalDukanKaUdhar;
 }
 
@@ -104,13 +211,9 @@ function addTransaction(type) {
     let money = Number(moneyStr);
     let items = document.getElementById("items").value;
 
-    if (name === "" && (moneyStr === "" || money <= 0)) {
-        showError("Bhai, aapne na toh grahak ka naam likha hai aur na hi paise bhare hain!"); return; 
-    } else if (name === "") {
-        showError("Bhai, aapne grahak ka naam nahi likha hai!"); return;
-    } else if (moneyStr === "" || money <= 0) {
-        showError("Bhai, aapne udhar ya jama ke paise nahi bhare hain!"); return;
-    }
+    if (name === "" && (moneyStr === "" || money <= 0)) { showError("Aapne na toh grahak ka naam likha hai aur na hi paise bhare hain!"); return; } 
+    else if (name === "") { showError("Aapne grahak ka naam nahi likha hai!"); return; } 
+    else if (moneyStr === "" || money <= 0) { showError("Aapne udhar ya jama ke paise nahi bhare hain!"); return; }
 
     let exactTime = new Date().toLocaleString("en-IN");
     let uniqueId = Date.now(); 
@@ -126,22 +229,17 @@ function addTransaction(type) {
     }
 
     localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
-
     document.getElementById("customerName").value = "";
     document.getElementById("amount").value = "";
     document.getElementById("items").value = "";
     updateScreen();
 }
 
-// 🌟 FIX: Quick Udhar Likhne par Center Popup (2 Input wala) aayega!
 function quickTransaction(grahakKaNaam, type) {
     let title = `"${grahakKaNaam}" ka ${type === 'udhar' ? 'Udhar Likh' : 'Paise Jama Kar'}`;
-    
     showDoubleInputModal(title, "₹ Kitne rupiye?", "🛍️ Samaan ki detail", "", "", function(moneyStr, items) {
         let money = Number(moneyStr);
-        if (isNaN(money) || money <= 0) {
-            showError("Aapne sahi paise (Number) nahi bhare hain bhai!"); return;
-        }
+        if (isNaN(money) || money <= 0) { showError("Aapne sahi paise nahi bhare hain!"); return; }
 
         let exactTime = new Date().toLocaleString("en-IN");
         let uniqueId = Date.now();
@@ -160,7 +258,6 @@ function quickTransaction(grahakKaNaam, type) {
     });
 }
 
-// 🌟 FIX: Delete Confirm karne ke liye Center Popup aayega!
 function deleteTransactionItem(grahakKaNaam, transactionID) {
     let grahakData = khataRegister[grahakKaNaam];
     let billIndex = grahakData.history.findIndex(bill => bill.id === transactionID);
@@ -168,11 +265,9 @@ function deleteTransactionItem(grahakKaNaam, transactionID) {
     let uskBazaHisaab = grahakData.history[billIndex];
 
     showConfirmModal(`Kya aap sach mein "${uskBazaHisaab.samaan}" (₹${uskBazaHisaab.amount}) ko delete karna chahte hain?`, function() {
-        if (uskBazaHisaab.type === 'udhar') {
-            grahakData.totalBalance -= uskBazaHisaab.amount;
-        } else {
-            grahakData.totalBalance += uskBazaHisaab.amount;
-        }
+        if (uskBazaHisaab.type === 'udhar') { grahakData.totalBalance -= uskBazaHisaab.amount; } 
+        else { grahakData.totalBalance += uskBazaHisaab.amount; }
+        
         grahakData.history.splice(billIndex, 1);
         localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
         updateScreen();
@@ -182,9 +277,7 @@ function deleteTransactionItem(grahakKaNaam, transactionID) {
 function editCustomerName(puranaNaam) {
     showSingleInputModal("Grahak ka naya naam likhein:", puranaNaam, function(nayaNaam) {
         if (nayaNaam === "" || nayaNaam === puranaNaam) return; 
-        if (khataRegister[nayaNaam] !== undefined) { 
-            showError("Bhai, is naam ka grahak pehle se dukan mein hai."); return; 
-        }
+        if (khataRegister[nayaNaam] !== undefined) { showError("Bhai, is naam ka grahak pehle se dukan mein hai."); return; }
 
         khataRegister[nayaNaam] = khataRegister[puranaNaam];
         delete khataRegister[puranaNaam];
@@ -200,15 +293,10 @@ function editTransaction(grahakKaNaam, transactionID) {
 
     showDoubleInputModal("Entry Edit Karein", "₹ Naye Paise", "🛍️ Naya Samaan", uskBazaHisaab.amount, uskBazaHisaab.samaan, function(moneyStr, nayaSamaan) {
         let nayePaise = Number(moneyStr);
-        if(isNaN(nayePaise) || nayePaise <= 0) { 
-            showError("Aapne sahi paise nahi bhare hain!"); return; 
-        }
+        if(isNaN(nayePaise) || nayePaise <= 0) { showError("Aapne sahi paise nahi bhare hain!"); return; }
 
-        if (uskBazaHisaab.type === 'udhar') {
-            grahakData.totalBalance = grahakData.totalBalance - uskBazaHisaab.amount + nayePaise;
-        } else {
-            grahakData.totalBalance = grahakData.totalBalance + uskBazaHisaab.amount - nayePaise;
-        }
+        if (uskBazaHisaab.type === 'udhar') { grahakData.totalBalance = grahakData.totalBalance - uskBazaHisaab.amount + nayePaise; } 
+        else { grahakData.totalBalance = grahakData.totalBalance + uskBazaHisaab.amount - nayePaise; }
 
         uskBazaHisaab.samaan = nayaSamaan;
         uskBazaHisaab.amount = nayePaise;
@@ -305,5 +393,6 @@ function searchCustomer() {
     updateScreen(word);
 }
 
+// App chalu hote hi ye functions call honge
 loadShopDetails();
 updateScreen();
