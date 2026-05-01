@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hisaab kitaab</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <div class="app-header">
+            <div class="rk-logo-box">
+                <span class="rk-logo-text">RK</span>
+            </div>
+            <div>
+                <h2>Mera Hisaab Kitaab</h2>
+                <span class="developer-tag">Developed by <b>Rihan Khan</b></span>
+            </div>
+        </div>
+
+        <div class="dashboard"> 
+            <p>
+                <span id="shopNameDisplay" onclick="editShopName()" title="Dukan ka naam badalne ke liye click karein">Apni Dukan</span> Ka Total Udhar ✏️
+            </p> 
+            <h1 id="totalShopBalance">₹0</h1> 
+        </div>
+
+        <div class="search-section"> 
+            <input type="text" id="searchInput" onkeyup="searchCustomer()" placeholder="🔍 Grahak dhoondhein..."> 
+        </div>
+
+        <div class="card input-section"> 
+            <input type="text" id="customerName" placeholder="👤 Grahak ka naam (Naye grahak ke liye)"> 
+            <input type="number" id="amount" placeholder="₹ Kitne rupiye?"> 
+            <input type="text" id="items" placeholder="🛍️ Samaan ki detail"> 
+            
+            <div class="button-group"> 
+                <button class="btn-udhar" onclick="addTransaction('udhar')">Udhar Likh Do</button> 
+                <button class="btn-jama" onclick="addTransaction('jama')">Paise Jama Karlo</button> 
+            </div>
+        </div>
+
+        <div id="accountList" class="list-section"> 
+            <!-- JS yahan data bharegi -->
+        </div>
+
+    </div>
+
+    <!-- 1. Galti batane wala Popup (Error Alert) -->
+    <div id="customAlertOverlay" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <div class="alert-icon">⚠️</div>
+            <h3 id="customAlertMessage">Error</h3>
+            <button onclick="closeAllModals()" class="btn-modal-ok">Theek Hai</button>
+        </div>
+    </div>
+
+    <!-- 2. Ek Input Wala Popup (Dukan ka naam ya Grahak ka naam badalne ke liye) -->
+    <div id="singleInputOverlay" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <h3 id="singleInputTitle">Naya Naam Dalen</h3>
+            <input type="text" id="singleInputValue" placeholder="Yahan type karein...">
+            <div class="modal-button-group">
+                <button id="btnSingleSave" class="btn-jama">Save</button>
+                <button onclick="closeAllModals()" class="btn-udhar">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Do Input Wala Popup (Naya Udhar ya Jama ke liye) -->
+    <div id="doubleInputOverlay" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <h3 id="doubleInputTitle">Naya Udhar Likhein</h3>
+            <!-- Pehla input Paise ke liye -->
+            <input type="number" id="doubleInput1" placeholder="₹ Kitne rupiye?">
+            <!-- Dusra input Samaan ke liye -->
+            <input type="text" id="doubleInput2" placeholder="🛍️ Samaan ki detail">
+            <div class="modal-button-group">
+                <button id="btnDoubleSave" class="btn-jama">OK (Save)</button>
+                <button onclick="closeAllModals()" class="btn-udhar">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Ha/Na poochna (Delete confirm karne ke liye) -->
+    <div id="confirmOverlay" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <h3 id="confirmTitle">Kya aap sure hain?</h3>
+            <div class="modal-button-group">
+                <button id="btnConfirmYes" class="btn-udhar">Haan, Delete Karo</button>
+                <button onclick="closeAllModals()" class="btn-jama">Nahi</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
