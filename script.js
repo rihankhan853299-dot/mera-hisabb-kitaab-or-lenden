@@ -1,4 +1,4 @@
-// Database nikalna memory se
+// Database nikalna memory se (Local Storage)
 let khataRegister = JSON.parse(localStorage.getItem("proKhataV5")) || {};
 let savedShopName = localStorage.getItem("myShopName") || "Apni Dukan";
 
@@ -13,18 +13,21 @@ function closeAllModals() {
     document.getElementById("confirmOverlay").style.display = "none";
 }
 
+// Warning wala message
 function showError(message) {
     document.getElementById("alertIconDisplay").innerText = "⚠️"; 
     document.getElementById("customAlertMessage").innerText = message;
     document.getElementById("customAlertOverlay").style.display = "flex";
 }
 
+// Robot (AI) ka jawab dikhane wala message
 function showVoiceResponse(message) {
     document.getElementById("alertIconDisplay").innerText = "🤖"; 
     document.getElementById("customAlertMessage").innerText = message;
     document.getElementById("customAlertOverlay").style.display = "flex";
 }
 
+// Ek box wala popup (Dukan/Grahak ka naam badalne ke liye)
 function showSingleInputModal(title, defaultValue, callbackFunction) {
     document.getElementById("singleInputTitle").innerText = title;
     let inputField = document.getElementById("singleInputValue");
@@ -40,6 +43,7 @@ function showSingleInputModal(title, defaultValue, callbackFunction) {
     };
 }
 
+// Do box wala popup (Udhar / Jama likhne ke liye)
 function showDoubleInputModal(title, placeholder1, placeholder2, val1, val2, callbackFunction) {
     document.getElementById("doubleInputTitle").innerText = title;
     let input1 = document.getElementById("doubleInput1");
@@ -61,6 +65,7 @@ function showDoubleInputModal(title, placeholder1, placeholder2, val1, val2, cal
     };
 }
 
+// Haan / Naa poochna (Delete karne se pehle)
 function showConfirmModal(message, callbackFunction) {
     document.getElementById("confirmTitle").innerText = message;
     document.getElementById("confirmOverlay").style.display = "flex";
@@ -72,7 +77,7 @@ function showConfirmModal(message, callbackFunction) {
 }
 
 /* ==========================================
-   🗣️ 2. TEXT-TO-SPEECH (ROBOT VOICE)
+   🗣️ 2. TEXT-TO-SPEECH (ROBOT KI AAWAZ)
 ========================================== */
 
 function speakText(textMessage) {
@@ -97,7 +102,7 @@ function startVoiceRecognition() {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'hi-IN'; 
+    recognition.lang = 'hi-IN'; // Hindi samajhne ki power
 
     const micBtn = document.getElementById("micBtn");
     const micStatus = document.getElementById("micStatus");
@@ -133,28 +138,28 @@ function startVoiceRecognition() {
 function processVoiceCommand(text) {
     let textLower = text.toLowerCase();
 
-    // 🌟 EASTER EGG: Creator (Rihan Khan) ke baare mein sawaal
-    if (textLower.includes("kisne banaya") || textLower.includes("tumhe kisne") || textLower.includes("aapko kisne")) {
+    // 🌟 EASTER EGG: Creator Sawaal (Ab Hinglish aur Hindi dono samajh lega)
+    if (textLower.includes("kisne banaya") || textLower.includes("tumhe kisne") || textLower.includes("aapko kisne") || textLower.includes("किसने बनाया") || textLower.includes("किसने")) {
         let creatorMsg = "Mujhe Rihan Khan ne banaya hai, aur Khan Sahab Salai ke rahne wale hain, aur ye chahte hain ki India independent ban jaye.";
         showVoiceResponse("🎙️ " + creatorMsg);
         speakText(creatorMsg);
-        return; // Yahan se wapas laut jao, aage ka code nahi chalega
+        return; 
     }
 
     // 1. PAISE NIKALNA
     let amountMatch = textLower.match(/\d+/);
     let money = amountMatch ? Number(amountMatch[0]) : 0;
 
-    // 2. KAAM SAMAJHNA: Udhar, Jama, Delete ya BALANCE POOCHNA?
+    // 2. KAAM SAMAJHNA: (Ab Hindi font words bhi add kiye hain)
     let type = 'udhar';
-    if (textLower.includes("jama") || textLower.includes("jamma")) { 
+    if (textLower.includes("jama") || textLower.includes("jamma") || textLower.includes("जमा")) { 
         type = 'jama'; 
-    } else if (textLower.includes("delete") || textLower.includes("kaat") || textLower.includes("hata") || textLower.includes("mita")) { 
+    } else if (textLower.includes("delete") || textLower.includes("kaat") || textLower.includes("hata") || textLower.includes("mita") || textLower.includes("काट") || textLower.includes("हटा") || textLower.includes("मिटा") || textLower.includes("डिलीट")) { 
         type = 'delete'; 
     }
     
     // Balance check karne ke lie
-    if (textLower.includes("balance") || textLower.includes("kitne") || textLower.includes("kitna") || textLower.includes("baki") || textLower.includes("hisaab") || textLower.includes("batao")) {
+    if (textLower.includes("balance") || textLower.includes("kitne") || textLower.includes("kitna") || textLower.includes("baki") || textLower.includes("hisaab") || textLower.includes("batao") || textLower.includes("कितने") || textLower.includes("बाकी") || textLower.includes("हिसाब") || textLower.includes("बताओ")) {
         if (money === 0) { type = 'balance'; }
     }
 
@@ -166,7 +171,8 @@ function processVoiceCommand(text) {
     }
 
     if (!foundName) {
-        let nameMatch = textLower.match(/(.*?)\s+(ke|ka|pe|par|ko|account|mein)/);
+        // Hinglish ke sath Hindi ke 'के', 'का', 'में' bhi shamil hain
+        let nameMatch = textLower.match(/(.*?)\s+(ke|ka|pe|par|ko|account|mein|के|का|पे|पर|को|अकाउंट|में)/);
         if (nameMatch && nameMatch[1]) {
             foundName = nameMatch[1].trim();
             foundName = foundName.charAt(0).toUpperCase() + foundName.slice(1);
@@ -177,7 +183,7 @@ function processVoiceCommand(text) {
         showError(`Grahak ka naam samajh nahi aaya.\nAapne bola: "${text}"`); return;
     }
 
-    // 🌟 4. BALANCE POOCHNE WALA JAWAB (Text-to-Speech)
+    // 🌟 4. BALANCE POOCHNE WALA JAWAB
     if (type === 'balance') {
         if (khataRegister[foundName] === undefined) {
             let msg = `Bhai, "${foundName}" ka dukan mein koi khata nahi hai.`;
@@ -218,11 +224,13 @@ function processVoiceCommand(text) {
         showError(`Paise samajh nahi aaye. Aapne bola: "${text}"`); return;
     }
 
+    // Samaan nikalne ke liye faltu words filter karna (Hindi bhi shamil hai)
     let samaan = textLower.replace(foundName.toLowerCase(), "")
                      .replace(money, "")
-                     .replace(/ke|ka|pe|par|ko|account|mein|rupiye|likh|do|karo|jama|delete|kaat|hata|aur/g, "").trim();
+                     .replace(/ke|ka|pe|par|ko|account|mein|rupiye|likh|do|karo|jama|delete|kaat|hata|aur|के|का|पे|पर|को|अकाउंट|में|रुपये|रु|लिख|दो|करो|जमा|काट|हटा|और|है|हैं/g, "").trim();
     if (samaan === "") samaan = type === 'udhar' ? "Udhar" : "Jama";
 
+    // Modals ke through Confirm karwana
     let title = `Voice Entry: ${foundName} (${type === 'udhar' ? 'Udhar Likhna' : 'Paise Jama'})`;
     showDoubleInputModal(title, "₹ Amount", "🛍️ Samaan", money, samaan, function(moneyStr, finalSamaan) {
         let finalMoney = Number(moneyStr);
@@ -254,6 +262,7 @@ function processVoiceCommand(text) {
 ========================================== */
 
 function loadShopDetails() { document.getElementById("shopNameDisplay").innerText = savedShopName; }
+
 function editShopName() {
     showSingleInputModal("Dukan ka naya naam dalen:", savedShopName, function(nayaNaam) {
         if (nayaNaam !== "") { savedShopName = nayaNaam; localStorage.setItem("myShopName", savedShopName); loadShopDetails(); }
@@ -454,6 +463,6 @@ function searchCustomer() {
     updateScreen(word);
 }
 
-// App chalu hote hi load karo
+// App chalu hote hi data aur naam load karo
 loadShopDetails();
 updateScreen();
