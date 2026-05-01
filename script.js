@@ -14,6 +14,13 @@ function closeAllModals() {
 }
 
 function showError(message) {
+    document.getElementById("alertIconDisplay").innerText = "⚠️"; 
+    document.getElementById("customAlertMessage").innerText = message;
+    document.getElementById("customAlertOverlay").style.display = "flex";
+}
+
+function showVoiceResponse(message) {
+    document.getElementById("alertIconDisplay").innerText = "🤖"; 
     document.getElementById("customAlertMessage").innerText = message;
     document.getElementById("customAlertOverlay").style.display = "flex";
 }
@@ -35,7 +42,6 @@ function showSingleInputModal(title, defaultValue, callbackFunction) {
 
 function showDoubleInputModal(title, placeholder1, placeholder2, val1, val2, callbackFunction) {
     document.getElementById("doubleInputTitle").innerText = title;
-    
     let input1 = document.getElementById("doubleInput1");
     let input2 = document.getElementById("doubleInput2");
     
@@ -66,18 +72,32 @@ function showConfirmModal(message, callbackFunction) {
 }
 
 /* ==========================================
-   🎙️ 2. VOICE AI (MIC) LOGIC
+   🗣️ 2. TEXT-TO-SPEECH (ROBOT VOICE)
+========================================== */
+
+function speakText(textMessage) {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); 
+        let utterance = new SpeechSynthesisUtterance(textMessage);
+        utterance.lang = 'hi-IN'; // Hindi bhasha
+        utterance.rate = 1;       // Normal Speed
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+/* ==========================================
+   🎙️ 3. VOICE AI (MIC) LOGIC & EASTER EGG
 ========================================== */
 
 function startVoiceRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        showError("Aapka browser Voice feature support nahi karta. Kripya Chrome use karein.");
+        showError("Aapka browser Voice feature support nahi karta. Kripya Chrome browser use karein.");
         return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = 'hi-IN'; // Hindi support
+    recognition.lang = 'hi-IN'; 
 
     const micBtn = document.getElementById("micBtn");
     const micStatus = document.getElementById("micStatus");
@@ -85,12 +105,12 @@ function startVoiceRecognition() {
     recognition.onstart = function() {
         micBtn.classList.add("recording");
         micBtn.innerText = "🎙️ Sun raha hoon...";
-        micStatus.innerText = "Boliye: 'Rihan ke khate mein 50 rupiye likh do sabun ke'";
+        micStatus.innerText = "Sawaal poochein ya Udhar likhvayein...";
     };
 
     recognition.onspeechend = function() {
         micBtn.classList.remove("recording");
-        micBtn.innerText = "🎙️ Bolkar Likhain";
+        micBtn.innerText = "🎙️ Bolkar Likhain ya Poochhein";
         micStatus.innerText = "Soch raha hoon...";
     };
 
@@ -102,38 +122,54 @@ function startVoiceRecognition() {
 
     recognition.onerror = function() {
         micBtn.classList.remove("recording");
-        micBtn.innerText = "🎙️ Bolkar Likhain";
+        micBtn.innerText = "🎙️ Bolkar Likhain ya Poochhein";
         showError("Theek se sunai nahi diya. Kripya dubara boliye!");
     };
 
+    window.speechSynthesis.cancel();
     recognition.start();
 }
 
 function processVoiceCommand(text) {
-    // Paise nikalna
-    let amountMatch = text.match(/\d+/);
-    if (!amountMatch) {
-        showError(`Paise samajh nahi aaye.\nAapne bola: "${text}"`); return;
+    let textLower = text.toLowerCase();
+
+    // 🌟 EASTER EGG: Creator (Rihan Khan) ke baare mein sawaal
+    if (textLower.includes("kisne banaya") || textLower.includes("tumhe kisne") || textLower.includes("aapko kisne")) {
+        let creatorMsg = "Mujhe Rihan Khan ne banaya hai, aur Khan Sahab Salai ke rahne wale hain, aur ye chahte hain ki India independent ban jaye.";
+        showVoiceResponse("🎙️ " + creatorMsg);
+        speakText(creatorMsg);
+        return; // Yahan se wapas laut jao, aage ka code nahi chalega
     }
-    let money = Number(amountMatch[0]);
 
-    // Type nikalna
+    // 1. PAISE NIKALNA
+    let amountMatch = textLower.match(/\d+/);
+    let money = amountMatch ? Number(amountMatch[0]) : 0;
+
+    // 2. KAAM SAMAJHNA: Udhar, Jama, Delete ya BALANCE POOCHNA?
     let type = 'udhar';
-    if (text.includes("jama") || text.includes("jamma")) { type = 'jama'; } 
-    else if (text.includes("delete") || text.includes("kaat") || text.includes("hata")) { type = 'delete'; }
+    if (textLower.includes("jama") || textLower.includes("jamma")) { 
+        type = 'jama'; 
+    } else if (textLower.includes("delete") || textLower.includes("kaat") || textLower.includes("hata") || textLower.includes("mita")) { 
+        type = 'delete'; 
+    }
+    
+    // Balance check karne ke lie
+    if (textLower.includes("balance") || textLower.includes("kitne") || textLower.includes("kitna") || textLower.includes("baki") || textLower.includes("hisaab") || textLower.includes("batao")) {
+        if (money === 0) { type = 'balance'; }
+    }
 
-    // Naam nikalna
+    // 3. NAAM NIKALNA
     let foundName = "";
     let existingCustomers = Object.keys(khataRegister);
     for (let name of existingCustomers) {
-        if (text.includes(name.toLowerCase())) { foundName = name; break; }
+        if (textLower.includes(name.toLowerCase())) { foundName = name; break; }
     }
 
     if (!foundName) {
-        let nameMatch = text.match(/(.*?)\s+(ke|ka|pe|par|ko|account|mein)/);
+        let nameMatch = textLower.match(/(.*?)\s+(ke|ka|pe|par|ko|account|mein)/);
         if (nameMatch && nameMatch[1]) {
             foundName = nameMatch[1].trim();
-            foundName = foundName.charAt(0).toUpperCase() + foundName.slice(1); // Pehla letter Capital
+            foundName = foundName.charAt(0).toUpperCase() + foundName.slice(1);
         }
     }
 
@@ -141,23 +177,52 @@ function processVoiceCommand(text) {
         showError(`Grahak ka naam samajh nahi aaya.\nAapne bola: "${text}"`); return;
     }
 
-    // Samaan nikalna
-    let samaan = text.replace(foundName.toLowerCase(), "")
-                     .replace(money, "")
-                     .replace(/ke|ka|pe|par|ko|account|mein|rupiye|likh|do|karo|jama|delete|kaat|hata|aur/g, "").trim();
-    if (samaan === "") samaan = type === 'udhar' ? "Udhar" : "Jama";
+    // 🌟 4. BALANCE POOCHNE WALA JAWAB (Text-to-Speech)
+    if (type === 'balance') {
+        if (khataRegister[foundName] === undefined) {
+            let msg = `Bhai, "${foundName}" ka dukan mein koi khata nahi hai.`;
+            showVoiceResponse("🎙️ " + msg);
+            speakText(msg);
+            return;
+        }
+        
+        let bal = khataRegister[foundName].totalBalance;
+        let responseMsg = "";
+        
+        if (bal > 0) {
+            responseMsg = `${foundName} par ${bal} rupiye ka udhar baki hai.`;
+        } else if (bal < 0) {
+            responseMsg = `${foundName} ke ${Math.abs(bal)} rupiye advance jama hain.`;
+        } else {
+            responseMsg = `${foundName} ka hisaab barabar hai. Koi udhar baki nahi hai.`;
+        }
+        
+        showVoiceResponse("🎙️ " + responseMsg);
+        speakText(responseMsg);
+        return;
+    }
 
-    // Agar delete command hai
+    // 5. DELETE WALA COMMAND
     if (type === 'delete') {
         showConfirmModal(`Voice AI: Kya aap sach mein "${foundName}" ka pura khata Delete karna chahte hain?`, function() {
             delete khataRegister[foundName];
             localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
             updateScreen();
+            speakText(`${foundName} ka khata hamesha ke liye delete kar diya gaya hai.`);
         });
         return;
     }
 
-    // Modal open karna check karne ke liye
+    // 6. UDHAR / JAMA WALA COMMAND
+    if (money === 0) {
+        showError(`Paise samajh nahi aaye. Aapne bola: "${text}"`); return;
+    }
+
+    let samaan = textLower.replace(foundName.toLowerCase(), "")
+                     .replace(money, "")
+                     .replace(/ke|ka|pe|par|ko|account|mein|rupiye|likh|do|karo|jama|delete|kaat|hata|aur/g, "").trim();
+    if (samaan === "") samaan = type === 'udhar' ? "Udhar" : "Jama";
+
     let title = `Voice Entry: ${foundName} (${type === 'udhar' ? 'Udhar Likhna' : 'Paise Jama'})`;
     showDoubleInputModal(title, "₹ Amount", "🛍️ Samaan", money, samaan, function(moneyStr, finalSamaan) {
         let finalMoney = Number(moneyStr);
@@ -178,24 +243,20 @@ function processVoiceCommand(text) {
         
         localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
         updateScreen();
+        
+        let bolneWalaMsg = `${foundName} ke khate mein ${finalMoney} rupiye ${type === 'udhar' ? 'likh diye gaye hain' : 'jama kar liye gaye hain'}.`;
+        speakText(bolneWalaMsg);
     });
 }
 
 /* ==========================================
-   🛒 3. MAIN APP LOGIC
+   🛒 4. MAIN APP LOGIC (MANUAL ENTRY)
 ========================================== */
 
-function loadShopDetails() {
-    document.getElementById("shopNameDisplay").innerText = savedShopName;
-}
-
+function loadShopDetails() { document.getElementById("shopNameDisplay").innerText = savedShopName; }
 function editShopName() {
     showSingleInputModal("Dukan ka naya naam dalen:", savedShopName, function(nayaNaam) {
-        if (nayaNaam !== "") {
-            savedShopName = nayaNaam; 
-            localStorage.setItem("myShopName", savedShopName); 
-            loadShopDetails(); 
-        }
+        if (nayaNaam !== "") { savedShopName = nayaNaam; localStorage.setItem("myShopName", savedShopName); loadShopDetails(); }
     });
 }
 
@@ -223,7 +284,7 @@ function addTransaction(type) {
     if (type === 'udhar') {
         khataRegister[name].totalBalance += money;
         khataRegister[name].history.push({ id: uniqueId, type: 'udhar', amount: money, samaan: items || "Udhar", time: exactTime });
-    } else if (type === 'jama') {
+    } else {
         khataRegister[name].totalBalance -= money;
         khataRegister[name].history.push({ id: uniqueId, type: 'jama', amount: money, samaan: items || "Jama kiye", time: exactTime });
     }
@@ -264,7 +325,7 @@ function deleteTransactionItem(grahakKaNaam, transactionID) {
     if(billIndex === -1) return;
     let uskBazaHisaab = grahakData.history[billIndex];
 
-    showConfirmModal(`Kya aap sach mein "${uskBazaHisaab.samaan}" (₹${uskBazaHisaab.amount}) ko delete karna chahte hain?`, function() {
+    showConfirmModal(`Kya aap sach mein "${uskBazaHisaab.samaan}" ko delete karna chahte hain?`, function() {
         if (uskBazaHisaab.type === 'udhar') { grahakData.totalBalance -= uskBazaHisaab.amount; } 
         else { grahakData.totalBalance += uskBazaHisaab.amount; }
         
@@ -393,6 +454,6 @@ function searchCustomer() {
     updateScreen(word);
 }
 
-// App chalu hote hi ye functions call honge
+// App chalu hote hi load karo
 loadShopDetails();
 updateScreen();
