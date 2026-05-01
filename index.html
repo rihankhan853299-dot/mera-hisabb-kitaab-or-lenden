@@ -3,23 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hisaab kitaab</title>
+    <title>Pro KhataBook - By RK Solution</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="app-container">
         
+        <!-- 🌟 Header: RK Solution Branding -->
         <div class="app-header">
             <div class="rk-logo-box">
                 <span class="rk-logo-text">RK</span>
             </div>
             <div>
-                <h2>Mera Hisaab Kitaab</h2>
-                <span class="developer-tag">Developed by <b>Rihan Khan</b></span>
+                <h2>Mera KhataBook</h2>
+                <span class="developer-tag">Developed by <b>RK Solution</b></span>
             </div>
         </div>
 
+        <!-- 🌟 Dashboard: Dukan ka Total Balance -->
         <div class="dashboard"> 
             <p>
                 <span id="shopNameDisplay" onclick="editShopName()" title="Dukan ka naam badalne ke liye click karein">Apni Dukan</span> Ka Total Udhar ✏️
@@ -27,10 +29,18 @@
             <h1 id="totalShopBalance">₹0</h1> 
         </div>
 
+        <!-- 🌟 Search Bar -->
         <div class="search-section"> 
             <input type="text" id="searchInput" onkeyup="searchCustomer()" placeholder="🔍 Grahak dhoondhein..."> 
         </div>
 
+        <!-- 🌟 Voice AI Mic Section -->
+        <div class="mic-section">
+            <button id="micBtn" class="btn-mic" onclick="startVoiceRecognition()">🎙️ Bolkar Likhain</button>
+            <p id="micStatus" class="mic-status"></p>
+        </div>
+
+        <!-- 🌟 Manual Entry Box -->
         <div class="card input-section"> 
             <input type="text" id="customerName" placeholder="👤 Grahak ka naam (Naye grahak ke liye)"> 
             <input type="number" id="amount" placeholder="₹ Kitne rupiye?"> 
@@ -42,13 +52,18 @@
             </div>
         </div>
 
+        <!-- 🌟 Grahakon Ki List -->
         <div id="accountList" class="list-section"> 
             <!-- JS yahan data bharegi -->
         </div>
 
     </div>
 
-    <!-- 1. Galti batane wala Popup (Error Alert) -->
+    <!-- ==========================================
+         🌟 PROFESSIONAL CUSTOM MODALS (POPUPS)
+    =========================================== -->
+
+    <!-- 1. Error / Warning Popup -->
     <div id="customAlertOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box">
             <div class="alert-icon">⚠️</div>
@@ -57,7 +72,7 @@
         </div>
     </div>
 
-    <!-- 2. Ek Input Wala Popup (Dukan ka naam ya Grahak ka naam badalne ke liye) -->
+    <!-- 2. Ek Input Wala Popup (Naam badalne ke liye) -->
     <div id="singleInputOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box">
             <h3 id="singleInputTitle">Naya Naam Dalen</h3>
@@ -69,14 +84,12 @@
         </div>
     </div>
 
-    <!-- 3. Do Input Wala Popup (Naya Udhar ya Jama ke liye) -->
+    <!-- 3. Do Input Wala Popup (Udhar Likhne / Edit ke liye) -->
     <div id="doubleInputOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box">
             <h3 id="doubleInputTitle">Naya Udhar Likhein</h3>
-            <!-- Pehla input Paise ke liye -->
-            <input type="number" id="doubleInput1" placeholder="₹ Kitne rupiye?">
-            <!-- Dusra input Samaan ke liye -->
-            <input type="text" id="doubleInput2" placeholder="🛍️ Samaan ki detail">
+            <input type="number" id="doubleInput1" placeholder="₹ Amount">
+            <input type="text" id="doubleInput2" placeholder="🛍️ Samaan">
             <div class="modal-button-group">
                 <button id="btnDoubleSave" class="btn-jama">OK (Save)</button>
                 <button onclick="closeAllModals()" class="btn-udhar">Cancel</button>
@@ -84,9 +97,10 @@
         </div>
     </div>
 
-    <!-- 4. Ha/Na poochna (Delete confirm karne ke liye) -->
+    <!-- 4. Confirm Delete Popup -->
     <div id="confirmOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box">
+            <div class="alert-icon" style="color: #ff4757;">🗑️</div>
             <h3 id="confirmTitle">Kya aap sure hain?</h3>
             <div class="modal-button-group">
                 <button id="btnConfirmYes" class="btn-udhar">Haan, Delete Karo</button>
