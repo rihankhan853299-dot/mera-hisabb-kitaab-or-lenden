@@ -9,6 +9,7 @@ function closeAllModals() {
     document.getElementById("singleInputOverlay").style.display = "none";
     document.getElementById("tripleInputOverlay").style.display = "none";
     document.getElementById("confirmOverlay").style.display = "none";
+    document.getElementById("historyOverlay").style.display = "none"; // Naya History modal
 }
 
 function showError(message) {
@@ -31,15 +32,12 @@ function showSingleInputModal(title, defaultValue, callbackFunction) {
     inputField.focus();
 
     document.getElementById("btnSingleSave").onclick = function() {
-        closeAllModals();
-        callbackFunction(inputField.value.trim());
+        closeAllModals(); callbackFunction(inputField.value.trim());
     };
 }
 
-// 🌟 NAYA: Triple Input Modal (Naam, Paise, Samaan - Galti theek karne ke liye)
 function showTripleInputModal(title, nameVal, moneyVal, itemVal, callbackFunction) {
     document.getElementById("tripleInputTitle").innerText = title;
-    
     document.getElementById("tripleInputName").value = nameVal;
     document.getElementById("tripleInputMoney").value = moneyVal;
     document.getElementById("tripleInputItem").value = itemVal;
@@ -55,7 +53,8 @@ function showTripleInputModal(title, nameVal, moneyVal, itemVal, callbackFunctio
     };
 }
 
-function showConfirmModal(message, callbackFunction) {
+function showConfirmModal(message, callbackFunction, isWarning = false) {
+    document.getElementById("confirmIconDisplay").innerText = isWarning ? "🚨" : "🗑️";
     document.getElementById("confirmTitle").innerText = message;
     document.getElementById("confirmOverlay").style.display = "flex";
     document.getElementById("btnConfirmYes").onclick = function() {
@@ -63,23 +62,117 @@ function showConfirmModal(message, callbackFunction) {
     };
 }
 
+/* ==========================================
+   🗣️ 2. TEXT-TO-SPEECH (BOLNE KI MACHINE)
+========================================== */
 function speakText(textMessage) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel(); 
-        let utterance = new SpeechSynthesisUtterance(textMessage);
-        utterance.lang = 'hi-IN'; 
-        window.speechSynthesis.speak(utterance);
+        setTimeout(function() {
+            let utterance = new SpeechSynthesisUtterance(textMessage);
+            utterance.lang = 'hi-IN'; 
+            window.speechSynthesis.speak(utterance);
+        }, 100);
     }
 }
 
 /* ==========================================
-   🎙️ 2. VOICE AI LOGIC (WITH NEW FILTERS)
+   🤖 3. AUTOMATED VOICE ALERTS (Har Ghante aur Raat 11 Baje)
+========================================== */
+// Ye function har 30 second mein check karega ki time kya hua hai
+setInterval(function() {
+    let now = new Date();
+    let h = now.getHours();
+    let m = now.getMinutes();
+    
+    let lastSpokenHour = localStorage.getItem("lastSpokenHour");
+    let lastSpoken11PM = localStorage.getItem("lastSpoken11PM");
+    let todayDateStr = now.toLocaleDateString("en-IN"); // Aaj ki Date (e.g. 4/5/2026)
+
+    // 🌟 Raat 11 Baje ki Special Report (23:00)
+    if (h === 23 && m === 0 && lastSpoken11PM !== todayDateStr) {
+        localStorage.setItem("lastSpoken11PM", todayDateStr);
+        localStorage.setItem("lastSpokenHour", h); // Taki normal hourly wali dobara na chale
+        
+        // Aaj ka total udhar nikalna
+        let todayUdharTotal = 0;
+        let targetDateStr = now.toLocaleString("en-IN").split(",")[0].trim();
+        for (let grahak in khataRegister) {
+            khataRegister[grahak].history.forEach(bill => {
+                // Agar lenden udhar ka hai aur uski tareekh aaj ki hai
+                if (bill.type === 'udhar' && bill.time.split(",")[0].trim() === targetDateStr) {
+                    todayUdharTotal += bill.amount;
+                }
+            });
+        }
+
+        let din = now.toLocaleDateString('hi-IN', { weekday: 'long' });
+        let tareekh = now.toLocaleDateString('hi-IN', { day: 'numeric', month: 'long' });
+        
+        let msg = `Aaj ${din}, ${tareekh} ko total ${todayUdharTotal} rupiye ka udhar gaya hai. Udhar ka paisa vasool karte ja, Aage udhar deta ja.`;
+        speakText(msg);
+        showVoiceResponse("🤖 " + msg);
+    }
+    // 🌟 Har Ghante ki Report (Jaise 1:00, 2:00, 3:00 par)
+    else if (m === 0 && lastSpokenHour != h && h !== 23) {
+        localStorage.setItem("lastSpokenHour", h);
+        
+        // Total Dukan Ka Udhar
+        let totalUdhar = 0;
+        for (let g in khataRegister) { totalUdhar += khataRegister[g].totalBalance; }
+        
+        let msg = `Malik, ab tak dukan ka total udhar ${totalUdhar} rupiye ja chuka hai.`;
+        speakText(msg);
+        // Isme popup na bhi dikhaye toh theek hai, par aapko pata chal jaye isliye dikha rahe hain
+        showVoiceResponse("🤖 " + msg);
+    }
+}, 30000); // Har 30 seconds mein check karega
+
+
+/* ==========================================
+   📊 4. DUKAN KI HISTORY (Date Wise)
+========================================== */
+function showShopHistory() {
+    let historyByDate = {};
+    
+    // Saare grahako ki history scan karo
+    for (let grahak in khataRegister) {
+        khataRegister[grahak].history.forEach(bill => {
+            if (bill.type === 'udhar') {
+                let dateStr = bill.time.split(",")[0].trim(); // Sirf date nikali
+                if (!historyByDate[dateStr]) historyByDate[dateStr] = 0;
+                historyByDate[dateStr] += bill.amount;
+            }
+        });
+    }
+
+    let listHTML = "";
+    // Date ke hisaab se dikhana
+    let dates = Object.keys(historyByDate).reverse(); // Nayi date upar
+    if (dates.length === 0) {
+        listHTML = "<p style='text-align:center; color:gray;'>Abhi tak koi udhar nahi diya gaya.</p>";
+    } else {
+        dates.forEach(date => {
+            listHTML += `
+                <li style="padding: 10px; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between;">
+                    <b>🗓️ ${date}</b> 
+                    <span style="color:#ff4757; font-weight:bold;">₹${historyByDate[date]}</span>
+                </li>
+            `;
+        });
+    }
+
+    document.getElementById("historyDataList").innerHTML = listHTML;
+    document.getElementById("historyOverlay").style.display = "flex";
+}
+
+
+/* ==========================================
+   🎙️ 5. HUMAN VOICE AI LOGIC
 ========================================== */
 function startVoiceRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        showError("Browser support nahi karta."); return;
-    }
+    if (!SpeechRecognition) { showError("Browser support nahi karta."); return; }
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'hi-IN'; 
@@ -118,91 +211,88 @@ function startVoiceRecognition() {
 function processVoiceCommand(text) {
     let textLower = text.toLowerCase();
 
-    // EASTER EGG (Creator wala)
-    if (textLower.includes("kisne banaya") || textLower.includes("tumhe kisne") || textLower.includes("aapko kisne") || textLower.includes("किसने बनाया") || textLower.includes("किसने")) {
+    // EASTER EGG
+    let creatorWords =["kisne banaya", "tumhe kisne", "aapko kisne", "किसने बनाया", "किसने"];
+    if (creatorWords.some(w => textLower.includes(w))) {
         let creatorMsg = "Mujhe Rihan Khan ne banaya hai, aur Khan Sahab Salai ke rahne wale hain, aur ye chahte hain ki India independent ban jaye.";
-        showVoiceResponse("🎙️ " + creatorMsg);
-        speakText(creatorMsg);
-        return; 
+        showVoiceResponse("🎙️ " + creatorMsg); speakText(creatorMsg); return; 
     }
 
-    // 🌟 FIX PROBLEM 3: Samaan box mein ₹ nahi aayega! (Pehle hi saare currency words hata do)
-    let cleanedTextForAmount = textLower.replace(/[₹$]/g, "").trim();
-    
-    // 1. PAISE NIKALNA
-    let amountMatch = cleanedTextForAmount.match(/\d+/);
+    // DELETE ALL ACCOUNTS
+    if (textLower.includes("sabko kaat do") || textLower.includes("saare account delete") || textLower.includes("sab delete") || textLower.includes("udhar band") || textLower.includes("saare khate delete") || textLower.includes("सबको काट दो")) {
+        let warnMsg = "🚨 SAVADHAAN: Kya aap sach mein dukan ke SAARE KHATE hamesha ke liye delete karna chahte hain?";
+        speakText("Savadhaan. Kya aap sach mein saare khate delete karna chahte hain?");
+        showConfirmModal(warnMsg, function() {
+            khataRegister = {}; 
+            localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
+            updateScreen();
+            speakText("Saare khate hamesha ke liye delete kar diye gaye hain.");
+        }, true);
+        return;
+    }
+
+    let cleanText = textLower.replace(/[₹$]/g, " ").replace(/\s+/g, " ").trim();
+    let amountMatch = cleanText.match(/\d+/);
     let money = amountMatch ? Number(amountMatch[0]) : 0;
 
-    // 2. KAAM SAMAJHNA (Action)
     let type = 'udhar';
-    if (/(jama|jamma|jma|prapt|aaye|jamaa|जमा)/i.test(cleanedTextForAmount)) { 
-        type = 'jama'; 
-    } else if (/(delete|kaat|hata|mita|डिलीट|काट|हटा)/i.test(cleanedTextForAmount)) { 
-        type = 'delete'; 
-    }
+    if (/(jama|jamma|jma|prapt|aaye|jamaa|जमा)/i.test(cleanText)) { type = 'jama'; } 
+    else if (/(delete|kaat|hata|mita|डिलीट|काट|हटा)/i.test(cleanText)) { type = 'delete'; }
     
-    // Balance check
-    if (/(balance|kitne|kitna|baki|hisaab|batao|कितने|बाकी|हिसाब)/i.test(cleanedTextForAmount)) {
-        if (money === 0) { type = 'balance'; }
-    }
+    if (/(balance|kitne|kitna|baki|hisaab|batao|कितने|बाकी|हिसाब)/i.test(cleanText) && money === 0) { type = 'balance'; }
 
-    // 3. NAAM NIKALNA
+    let wordsArray = cleanText.split(" ");
     let foundName = "";
     let existingCustomers = Object.keys(khataRegister);
     
-    // Pehle purane grahako mein dhoondho
     for (let name of existingCustomers) {
-        if (cleanedTextForAmount.includes(name.toLowerCase())) { foundName = name; break; }
+        if (cleanText.includes(name.toLowerCase())) { foundName = name; break; }
     }
 
-    // 🌟 FIX PROBLEM 2: Agar naam nahi mila toh naya AI Logic
     if (!foundName) {
-        // Sentence ka pehla word nikal lo (Kyunki naam hamesha shuru mein hota hai)
-        let words = cleanedTextForAmount.split(" ");
-        foundName = words[0]; 
-        foundName = foundName.charAt(0).toUpperCase() + foundName.slice(1);
+        let indicators =["ke","ka","pe","par","ko","account","mein","me","khata","khaate","के","का","पे","पर","को","अकाउंट","में","खाते","खाता"];
+        let indicatorIndex = wordsArray.findIndex(w => indicators.includes(w));
+        if (indicatorIndex > 0) { foundName = wordsArray.slice(0, indicatorIndex).join(" "); } 
+        else { foundName = wordsArray[0]; }
+        if(foundName) { foundName = foundName.charAt(0).toUpperCase() + foundName.slice(1); }
     }
 
-    // 4. BALANCE POOCHNE WALA JAWAB
-    if (type === 'balance') {
+    if (type === 'delete' || type === 'balance') {
         if (khataRegister[foundName] === undefined) {
-            let msg = `Bhai, "${foundName}" ka dukan mein koi khata nahi hai.`;
-            showVoiceResponse("🎙️ " + msg); speakText(msg); return;
+            let errorMsg = `Bhai, dukan mein "${foundName}" naam ka koi khata nahi hai.`;
+            showVoiceResponse("🤖 " + errorMsg); speakText(errorMsg); return; 
         }
+    }
+
+    if (type === 'balance') {
         let bal = khataRegister[foundName].totalBalance;
         let responseMsg = bal > 0 ? `${foundName} par ${bal} rupiye ka udhar baki hai.` : (bal < 0 ? `${foundName} ke ${Math.abs(bal)} rupiye jama hain.` : `${foundName} ka hisaab barabar hai.`);
         showVoiceResponse("🎙️ " + responseMsg); speakText(responseMsg); return;
     }
 
-    // 5. DELETE WALA COMMAND
     if (type === 'delete') {
-        showConfirmModal(`Voice AI: Kya aap sach mein "${foundName}" ka pura khata Delete karna chahte hain?`, function() {
+        showConfirmModal(`Kya aap sach mein "${foundName}" ka pura khata Delete karna chahte hain?`, function() {
             delete khataRegister[foundName]; localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen(); speakText(`${foundName} ka khata delete ho gaya.`);
         });
         return;
     }
 
-    if (money === 0) { showError(`Paise samajh nahi aaye.\nAapne bola: "${text}"`); return; }
+    if (money === 0) { showError("Aapne paise nahi bataye."); return; }
 
-    // 🌟 FIX PROBLEM 2 & 3: SAMAAN NIKALNA (Saare kachra words Delete)
-    let fillerWordsRegex = /ke|ka|pe|par|ko|account|mein|me|khata|dhoondhkar|dhoodhkar|add|kar|do|abhi|chadhao|likho|likh|jama|jamma|delete|hata|kaat|rupiye|rupees|rs|₹|के|का|पे|पर|को|अकाउंट|में|रुपये|रु|लिख|दो|करो|जमा|काट|हटा|और|है|हैं|वाले|की|का|वाले/gi;
+    let fillerWords =["ke","ka","pe","par","ko","account","mein","me","khata","khaate","dhoondhkar","dhoodhkar","add","kar","do","abhi","chadhao","likho","likh","jama","jamma","delete","hata","kaat","rupiye","rupees","rs","₹","के","का","पे","पर","को","अकाउंट","में","रुपये","रु","रुपया","लिख","दो","करो","जमा","काट","हटा","और","है","हैं","वाले","की","चढ़ाओ","खाते","हिसाब","लगा", "bhai", "yaar"];
     
-    let samaan = cleanedTextForAmount.replace(foundName.toLowerCase(), "")
-                                     .replace(money.toString(), "")
-                                     .replace(fillerWordsRegex, "")
-                                     .trim();
-    // Extra space hatana
-    samaan = samaan.replace(/\s+/g, ' ').trim();
+    let filteredTokens = wordsArray.filter(w => !fillerWords.includes(w));
+    let nameWords = foundName.toLowerCase().split(" ");
+    filteredTokens = filteredTokens.filter(w => !nameWords.includes(w) && w !== money.toString());
+
+    let samaan = filteredTokens.join(" ").trim();
     if (samaan === "") samaan = type === 'udhar' ? "Udhar" : "Jama";
 
-    // 🌟 FIX PROBLEM 1: TRIPLE INPUT MODAL (Jahan naam bhi theek kiya ja sake)
     let title = `Voice Entry (${type === 'udhar' ? 'Udhar Likhna' : 'Paise Jama'})`;
     
     showTripleInputModal(title, foundName, money, samaan, function(finalName, moneyStr, finalSamaan) {
         let finalMoney = Number(moneyStr);
-        if (finalName === "" || isNaN(finalMoney) || finalMoney <= 0) {
-            showError("Aapne naam ya paise theek se nahi bhare!"); return;
-        }
+        if (finalName === "" || isNaN(finalMoney) || finalMoney <= 0) { showError("Naam ya paise theek se nahi bhare!"); return; }
         
         let exactTime = new Date().toLocaleString("en-IN");
         let uniqueId = Date.now();
@@ -224,14 +314,16 @@ function processVoiceCommand(text) {
 }
 
 /* ==========================================
-   🛒 3. MAIN APP LOGIC (MANUAL)
+   🛒 6. MAIN APP LOGIC (MANUAL ENTRY)
 ========================================== */
 function loadShopDetails() { document.getElementById("shopNameDisplay").innerText = savedShopName; }
+
 function editShopName() {
     showSingleInputModal("Dukan ka naya naam dalen:", savedShopName, function(nayaNaam) {
         if (nayaNaam !== "") { savedShopName = nayaNaam; localStorage.setItem("myShopName", savedShopName); loadShopDetails(); }
     });
 }
+
 function calculateShopTotal() {
     let totalDukanKaUdhar = 0;
     for (let grahak in khataRegister) { totalDukanKaUdhar += khataRegister[grahak].totalBalance; }
@@ -252,6 +344,7 @@ function addTransaction(type) {
     let uniqueId = Date.now(); 
 
     if (khataRegister[name] === undefined) { khataRegister[name] = { totalBalance: 0, history:[] }; }
+
     if (type === 'udhar') {
         khataRegister[name].totalBalance += money;
         khataRegister[name].history.push({ id: uniqueId, type: 'udhar', amount: money, samaan: items || "Udhar", time: exactTime });
@@ -259,6 +352,7 @@ function addTransaction(type) {
         khataRegister[name].totalBalance -= money;
         khataRegister[name].history.push({ id: uniqueId, type: 'jama', amount: money, samaan: items || "Jama kiye", time: exactTime });
     }
+
     localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
     document.getElementById("customerName").value = ""; document.getElementById("amount").value = ""; document.getElementById("items").value = "";
     updateScreen();
@@ -266,15 +360,12 @@ function addTransaction(type) {
 
 function quickTransaction(grahakKaNaam, type) {
     let title = `"${grahakKaNaam}" ka ${type === 'udhar' ? 'Udhar Likh' : 'Paise Jama'}`;
-    // Purana showDoubleInputModal iske liye theek hai (Kyunki naam pehle se pata hai)
     showTripleInputModal(title, grahakKaNaam, "", "", function(finalName, moneyStr, items) {
         let money = Number(moneyStr);
-        if (isNaN(money) || money <= 0) { showError("Aapne sahi paise nahi bhare hain!"); return; }
+        if (isNaN(money) || money <= 0) { showError("Sahi paise nahi bhare hain!"); return; }
 
         let exactTime = new Date().toLocaleString("en-IN");
         let uniqueId = Date.now();
-        
-        // Agar naam change kar diya gaya popup mein, toh check karo
         if (khataRegister[finalName] === undefined) { khataRegister[finalName] = { totalBalance: 0, history:[] }; }
 
         if (type === 'udhar') {
@@ -324,9 +415,8 @@ function editTransaction(grahakKaNaam, transactionID) {
 
     showTripleInputModal("Entry Edit Karein", grahakKaNaam, uskBazaHisaab.amount, uskBazaHisaab.samaan, function(finalName, moneyStr, nayaSamaan) {
         let nayePaise = Number(moneyStr);
-        if(isNaN(nayePaise) || nayePaise <= 0) { showError("Aapne sahi paise nahi bhare hain!"); return; }
+        if(isNaN(nayePaise) || nayePaise <= 0) { showError("Sahi paise nahi bhare hain!"); return; }
 
-        // Balance adjust
         if (uskBazaHisaab.type === 'udhar') { grahakData.totalBalance = grahakData.totalBalance - uskBazaHisaab.amount + nayePaise; } 
         else { grahakData.totalBalance = grahakData.totalBalance + uskBazaHisaab.amount - nayePaise; }
 
