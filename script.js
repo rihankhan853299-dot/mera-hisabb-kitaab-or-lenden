@@ -1,519 +1,303 @@
+// Database nikalna memory se (Local Storage)
 let khataRegister = JSON.parse(localStorage.getItem("proKhataV5")) || {};
 let savedShopName = localStorage.getItem("myShopName") || "Apni Dukan";
 
 /* ==========================================
-   🛠️ 1. CUSTOM POPUPS CONTROLS
+   🛠️ 1. CUSTOM POPUP (MODALS) CONTROLS
 ========================================== */
 function closeAllModals() {
-    document.getElementById("customAlertOverlay").style.display = "none";
-    document.getElementById("singleInputOverlay").style.display = "none";
-    document.getElementById("tripleInputOverlay").style.display = "none";
-    document.getElementById("confirmOverlay").style.display = "none";
-    document.getElementById("historyOverlay").style.display = "none"; // Naya History modal
+    document.querySelectorAll('.custom-modal-overlay').forEach(el => el.style.display = 'none');
 }
 
-function showError(message) {
+function showError(msg) {
     document.getElementById("alertIconDisplay").innerText = "⚠️"; 
-    document.getElementById("customAlertMessage").innerText = message;
+    document.getElementById("customAlertMessage").innerText = msg;
     document.getElementById("customAlertOverlay").style.display = "flex";
 }
 
-function showVoiceResponse(message) {
+function showVoiceResponse(msg) {
     document.getElementById("alertIconDisplay").innerText = "🤖"; 
-    document.getElementById("customAlertMessage").innerText = message;
+    document.getElementById("customAlertMessage").innerText = msg;
     document.getElementById("customAlertOverlay").style.display = "flex";
 }
 
-function showSingleInputModal(title, defaultValue, callbackFunction) {
+function showSingleInputModal(title, defaultVal, callback) {
     document.getElementById("singleInputTitle").innerText = title;
-    let inputField = document.getElementById("singleInputValue");
-    inputField.value = defaultValue;
+    let input = document.getElementById("singleInputValue");
+    input.value = defaultVal;
     document.getElementById("singleInputOverlay").style.display = "flex";
-    inputField.focus();
-
+    input.focus();
     document.getElementById("btnSingleSave").onclick = function() {
-        closeAllModals(); callbackFunction(inputField.value.trim());
+        closeAllModals(); callback(input.value.trim());
     };
 }
 
-function showTripleInputModal(title, nameVal, moneyVal, itemVal, callbackFunction) {
+function showTripleInputModal(title, name, money, item, callback) {
     document.getElementById("tripleInputTitle").innerText = title;
-    document.getElementById("tripleInputName").value = nameVal;
-    document.getElementById("tripleInputMoney").value = moneyVal;
-    document.getElementById("tripleInputItem").value = itemVal;
-
+    document.getElementById("tripleInputName").value = name;
+    document.getElementById("tripleInputMoney").value = money;
+    document.getElementById("tripleInputItem").value = item;
     document.getElementById("tripleInputOverlay").style.display = "flex";
-
     document.getElementById("btnTripleSave").onclick = function() {
-        let finalName = document.getElementById("tripleInputName").value.trim();
-        let finalMoney = document.getElementById("tripleInputMoney").value;
-        let finalItem = document.getElementById("tripleInputItem").value.trim();
-        closeAllModals();
-        callbackFunction(finalName, finalMoney, finalItem);
+        let n = document.getElementById("tripleInputName").value.trim();
+        let m = document.getElementById("tripleInputMoney").value;
+        let i = document.getElementById("tripleInputItem").value.trim();
+        closeAllModals(); callback(n, m, i);
     };
 }
 
-function showConfirmModal(message, callbackFunction, isWarning = false) {
+function showConfirmModal(msg, callback, isWarning = false) {
     document.getElementById("confirmIconDisplay").innerText = isWarning ? "🚨" : "🗑️";
-    document.getElementById("confirmTitle").innerText = message;
+    document.getElementById("confirmTitle").innerText = msg;
     document.getElementById("confirmOverlay").style.display = "flex";
     document.getElementById("btnConfirmYes").onclick = function() {
-        closeAllModals(); callbackFunction();
+        closeAllModals(); callback();
     };
 }
 
 /* ==========================================
-   🗣️ 2. TEXT-TO-SPEECH (BOLNE KI MACHINE)
+   🗣️ 2. TEXT-TO-SPEECH (ROBOT VOICE)
 ========================================== */
-function speakText(textMessage) {
+function speakText(text) {
     if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel(); 
-        setTimeout(function() {
-            let utterance = new SpeechSynthesisUtterance(textMessage);
-            utterance.lang = 'hi-IN'; 
-            window.speechSynthesis.speak(utterance);
+        setTimeout(() => {
+            let u = new SpeechSynthesisUtterance(text);
+            u.lang = 'hi-IN'; window.speechSynthesis.speak(u);
         }, 100);
     }
 }
 
 /* ==========================================
-   🤖 3. AUTOMATED VOICE ALERTS (Har Ghante aur Raat 11 Baje)
-========================================== */
-// Ye function har 30 second mein check karega ki time kya hua hai
-setInterval(function() {
-    let now = new Date();
-    let h = now.getHours();
-    let m = now.getMinutes();
-    
-    let lastSpokenHour = localStorage.getItem("lastSpokenHour");
-    let lastSpoken11PM = localStorage.getItem("lastSpoken11PM");
-    let todayDateStr = now.toLocaleDateString("en-IN"); // Aaj ki Date (e.g. 4/5/2026)
-
-    // 🌟 Raat 11 Baje ki Special Report (23:00)
-    if (h === 23 && m === 0 && lastSpoken11PM !== todayDateStr) {
-        localStorage.setItem("lastSpoken11PM", todayDateStr);
-        localStorage.setItem("lastSpokenHour", h); // Taki normal hourly wali dobara na chale
-        
-        // Aaj ka total udhar nikalna
-        let todayUdharTotal = 0;
-        let targetDateStr = now.toLocaleString("en-IN").split(",")[0].trim();
-        for (let grahak in khataRegister) {
-            khataRegister[grahak].history.forEach(bill => {
-                // Agar lenden udhar ka hai aur uski tareekh aaj ki hai
-                if (bill.type === 'udhar' && bill.time.split(",")[0].trim() === targetDateStr) {
-                    todayUdharTotal += bill.amount;
-                }
-            });
-        }
-
-        let din = now.toLocaleDateString('hi-IN', { weekday: 'long' });
-        let tareekh = now.toLocaleDateString('hi-IN', { day: 'numeric', month: 'long' });
-        
-        let msg = `Aaj ${din}, ${tareekh} ko total ${todayUdharTotal} rupiye ka udhar gaya hai. Udhar ka paisa vasool karte ja, Aage udhar deta ja.`;
-        speakText(msg);
-        showVoiceResponse("🤖 " + msg);
-    }
-    // 🌟 Har Ghante ki Report (Jaise 1:00, 2:00, 3:00 par)
-    else if (m === 0 && lastSpokenHour != h && h !== 23) {
-        localStorage.setItem("lastSpokenHour", h);
-        
-        // Total Dukan Ka Udhar
-        let totalUdhar = 0;
-        for (let g in khataRegister) { totalUdhar += khataRegister[g].totalBalance; }
-        
-        let msg = `Malik, ab tak dukan ka total udhar ${totalUdhar} rupiye ja chuka hai.`;
-        speakText(msg);
-        // Isme popup na bhi dikhaye toh theek hai, par aapko pata chal jaye isliye dikha rahe hain
-        showVoiceResponse("🤖 " + msg);
-    }
-}, 30000); // Har 30 seconds mein check karega
-
-
-/* ==========================================
-   📊 4. DUKAN KI HISTORY (Date Wise)
+   📊 3. DUKAN KI HISTORY (Date Wise)
 ========================================== */
 function showShopHistory() {
     let historyByDate = {};
-    
-    // Saare grahako ki history scan karo
-    for (let grahak in khataRegister) {
-        khataRegister[grahak].history.forEach(bill => {
-            if (bill.type === 'udhar') {
-                let dateStr = bill.time.split(",")[0].trim(); // Sirf date nikali
-                if (!historyByDate[dateStr]) historyByDate[dateStr] = 0;
-                historyByDate[dateStr] += bill.amount;
+    for (let g in khataRegister) {
+        khataRegister[g].history.forEach(b => {
+            if (b.type === 'udhar') {
+                let d = b.time.split(",")[0].trim();
+                if (!historyByDate[d]) historyByDate[d] = 0;
+                historyByDate[d] += b.amount;
             }
         });
     }
-
     let listHTML = "";
-    // Date ke hisaab se dikhana
-    let dates = Object.keys(historyByDate).reverse(); // Nayi date upar
-    if (dates.length === 0) {
-        listHTML = "<p style='text-align:center; color:gray;'>Abhi tak koi udhar nahi diya gaya.</p>";
-    } else {
-        dates.forEach(date => {
-            listHTML += `
-                <li style="padding: 10px; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between;">
-                    <b>🗓️ ${date}</b> 
-                    <span style="color:#ff4757; font-weight:bold;">₹${historyByDate[date]}</span>
-                </li>
-            `;
-        });
-    }
-
+    let dates = Object.keys(historyByDate).reverse();
+    if (dates.length === 0) listHTML = "<p style='color:gray;'>Abhi tak koi udhar nahi diya gaya.</p>";
+    else dates.forEach(d => { 
+        listHTML += `<li style="padding: 10px; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between;"><b>🗓️ ${d}</b> <span style="color:#ff4757; font-weight:bold;">₹${historyByDate[d]}</span></li>`; 
+    });
     document.getElementById("historyDataList").innerHTML = listHTML;
     document.getElementById("historyOverlay").style.display = "flex";
 }
 
-
 /* ==========================================
-   🎙️ 5. HUMAN VOICE AI LOGIC
+   🎙️ 4. VOICE AI LOGIC (JARVIS)
 ========================================== */
 function startVoiceRecognition() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { showError("Browser support nahi karta."); return; }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'hi-IN'; 
-
-    const micBtn = document.getElementById("micBtn");
-    const micStatus = document.getElementById("micStatus");
-
-    recognition.onstart = function() {
-        micBtn.classList.add("recording");
-        micBtn.innerText = "🎙️ Sun raha hoon...";
-        micStatus.innerText = "Boliye...";
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { showError("Browser not supported. Use Google Chrome."); return; }
+    const rec = new SR(); rec.lang = 'hi-IN'; 
+    const btn = document.getElementById("micBtn"), stat = document.getElementById("micStatus");
+    rec.onstart = () => { btn.classList.add("recording"); btn.innerText = "🎙️ Sun raha hoon..."; };
+    rec.onspeechend = () => { btn.classList.remove("recording"); btn.innerText = "🎙️ Bolkar Likhain ya Poochhein"; stat.innerText = "Soch raha hoon..."; };
+    rec.onresult = (e) => {
+        let text = e.results[0][0].transcript.toLowerCase();
+        stat.innerText = `Aapne bola: "${text}"`;
+        processVoiceCommand(text);
     };
-
-    recognition.onspeechend = function() {
-        micBtn.classList.remove("recording");
-        micBtn.innerText = "🎙️ Bolkar Likhain ya Poochhein";
-        micStatus.innerText = "Soch raha hoon...";
-    };
-
-    recognition.onresult = function(event) {
-        let transcript = event.results[0][0].transcript.toLowerCase();
-        micStatus.innerText = `Aapne bola: "${transcript}"`;
-        processVoiceCommand(transcript);
-    };
-
-    recognition.onerror = function() {
-        micBtn.classList.remove("recording");
-        micBtn.innerText = "🎙️ Bolkar Likhain ya Poochhein";
-        showError("Theek se sunai nahi diya. Dubara boliye.");
-    };
-
-    window.speechSynthesis.cancel();
-    recognition.start();
+    rec.onerror = () => { btn.classList.remove("recording"); btn.innerText = "🎙️ Bolkar Likhain"; showError("Theek se sunai nahi diya."); };
+    window.speechSynthesis.cancel(); rec.start();
 }
 
 function processVoiceCommand(text) {
-    let textLower = text.toLowerCase();
-
-    // EASTER EGG
-    let creatorWords =["kisne banaya", "tumhe kisne", "aapko kisne", "किसने बनाया", "किसने"];
-    if (creatorWords.some(w => textLower.includes(w))) {
-        let creatorMsg = "Mujhe Rihan Khan ne banaya hai, aur Khan Sahab Salai ke rahne wale hain, aur ye chahte hain ki India independent ban jaye.";
-        showVoiceResponse("🎙️ " + creatorMsg); speakText(creatorMsg); return; 
+    let t = text.toLowerCase();
+    
+    // 🌟 Easter Egg (Rihan Khan)
+    if (["kisne banaya", "tumhe kisne", "aapko kisne", "किसने बनाया", "किसने"].some(w => t.includes(w))) {
+        let msg = "Mujhe Rihan Khan ne banaya hai, aur Khan Sahab Salai ke rahne wale hain, aur ye chahte hain ki India independent ban jaye.";
+        showVoiceResponse("🎙️ " + msg); speakText(msg); return; 
+    }
+    // Delete All Accounts
+    if (/(sabko kaat do|saare account delete|sab delete|udhar band|सबको काट दो)/i.test(t)) {
+        speakText("Kya aap sach mein saare khate delete karna chahte hain?");
+        showConfirmModal("🚨 SAVADHAAN: Saare khate delete karein?", () => {
+            khataRegister = {}; localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen(); speakText("Delete ho gaye.");
+        }, true); return;
+    }
+    // Total Udhar Poochna
+    if (/(total udhar|ab tak total|dukan ka total|kul udhar|टोटल उधार|कुल उधार)/i.test(t)) {
+        let total = 0; for (let g in khataRegister) total += khataRegister[g].totalBalance;
+        let msg = `Malik, ab tak dukan ka total udhar ${total} rupiye hai.`;
+        showVoiceResponse("🤖 " + msg); speakText(msg); return;
+    }
+    // Last Udhar Kisko Diya
+    if (/(last udhar|aakhiri udhar|aakhri udhar|pichla udhar|आखरी उधार|पिछला उधार)/i.test(t)) {
+        let lName = "", lAmt = 0, lTime = 0;
+        for(let g in khataRegister) khataRegister[g].history.forEach(b => { if(b.type === 'udhar' && b.id > lTime) { lTime = b.id; lName = g; lAmt = b.amount; }});
+        let msg = lName ? `Aapne aakhiri udhar ${lName} ko ${lAmt} rupiye ka diya tha.` : "Koi udhar nahi gaya.";
+        showVoiceResponse("🤖 " + msg); speakText(msg); return;
+    }
+    // Sabka Hisaab
+    if (/(kise kitna udhar|kis par kitna|kaun kaun udhar|sabka hisaab|किस पर कितना)/i.test(t)) {
+        let arr =[]; for(let g in khataRegister) if(khataRegister[g].totalBalance > 0) arr.push(`${g} par ${khataRegister[g].totalBalance}`);
+        let msg = arr.length ? "Udhar is prakar hai: " + arr.join(", ") : "Kisi par udhar nahi hai.";
+        showVoiceResponse("🤖 " + msg); speakText(msg); return;
     }
 
-    // DELETE ALL ACCOUNTS
-    if (textLower.includes("sabko kaat do") || textLower.includes("saare account delete") || textLower.includes("sab delete") || textLower.includes("udhar band") || textLower.includes("saare khate delete") || textLower.includes("सबको काट दो")) {
-        let warnMsg = "🚨 SAVADHAAN: Kya aap sach mein dukan ke SAARE KHATE hamesha ke liye delete karna chahte hain?";
-        speakText("Savadhaan. Kya aap sach mein saare khate delete karna chahte hain?");
-        showConfirmModal(warnMsg, function() {
-            khataRegister = {}; 
-            localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
-            updateScreen();
-            speakText("Saare khate hamesha ke liye delete kar diye gaye hain.");
-        }, true);
-        return;
-    }
-
-    let cleanText = textLower.replace(/[₹$]/g, " ").replace(/\s+/g, " ").trim();
-    let amountMatch = cleanText.match(/\d+/);
-    let money = amountMatch ? Number(amountMatch[0]) : 0;
+    let clean = t.replace(/[₹$]/g, " ").replace(/\s+/g, " ").trim();
+    let amtMatch = clean.match(/\d+/); let money = amtMatch ? Number(amtMatch[0]) : 0;
 
     let type = 'udhar';
-    if (/(jama|jamma|jma|prapt|aaye|jamaa|जमा)/i.test(cleanText)) { type = 'jama'; } 
-    else if (/(delete|kaat|hata|mita|डिलीट|काट|हटा)/i.test(cleanText)) { type = 'delete'; }
-    
-    if (/(balance|kitne|kitna|baki|hisaab|batao|कितने|बाकी|हिसाब)/i.test(cleanText) && money === 0) { type = 'balance'; }
+    if (/(jama|jamma|prapt|aaye|जमा)/i.test(clean)) type = 'jama';
+    else if (/(delete|kaat|hata|mita|डिलीट|काट|हटा)/i.test(clean)) type = 'delete';
+    if (/(balance|kitne|kitna|baki|hisaab|batao|कितने|बाकी|हिसाब)/i.test(clean) && money === 0) type = 'balance';
 
-    let wordsArray = cleanText.split(" ");
-    let foundName = "";
-    let existingCustomers = Object.keys(khataRegister);
-    
-    for (let name of existingCustomers) {
-        if (cleanText.includes(name.toLowerCase())) { foundName = name; break; }
-    }
+    let words = clean.split(" "), foundName = "";
+    for (let name of Object.keys(khataRegister)) if (clean.includes(name.toLowerCase())) { foundName = name; break; }
 
     if (!foundName) {
-        let indicators =["ke","ka","pe","par","ko","account","mein","me","khata","khaate","के","का","पे","पर","को","अकाउंट","में","खाते","खाता"];
-        let indicatorIndex = wordsArray.findIndex(w => indicators.includes(w));
-        if (indicatorIndex > 0) { foundName = wordsArray.slice(0, indicatorIndex).join(" "); } 
-        else { foundName = wordsArray[0]; }
-        if(foundName) { foundName = foundName.charAt(0).toUpperCase() + foundName.slice(1); }
+        let idx = words.findIndex(w =>["ke","ka","pe","par","ko","account","mein","me","khata","khaate","के","का","पे","पर","को","अकाउंट","में","खाते","खाता"].includes(w));
+        foundName = idx > 0 ? words.slice(0, idx).join(" ") : words[0];
+        if(foundName) foundName = foundName.charAt(0).toUpperCase() + foundName.slice(1);
     }
 
     if (type === 'delete' || type === 'balance') {
-        if (khataRegister[foundName] === undefined) {
-            let errorMsg = `Bhai, dukan mein "${foundName}" naam ka koi khata nahi hai.`;
-            showVoiceResponse("🤖 " + errorMsg); speakText(errorMsg); return; 
+        if (!khataRegister[foundName]) {
+            let err = `Bhai, "${foundName}" ka khata dukan mein nahi hai.`; showVoiceResponse("🤖 " + err); speakText(err); return; 
         }
     }
-
     if (type === 'balance') {
         let bal = khataRegister[foundName].totalBalance;
-        let responseMsg = bal > 0 ? `${foundName} par ${bal} rupiye ka udhar baki hai.` : (bal < 0 ? `${foundName} ke ${Math.abs(bal)} rupiye jama hain.` : `${foundName} ka hisaab barabar hai.`);
-        showVoiceResponse("🎙️ " + responseMsg); speakText(responseMsg); return;
+        let msg = bal > 0 ? `${foundName} par ${bal} baki hai.` : (bal < 0 ? `${foundName} ke ${Math.abs(bal)} jama hain.` : "Hisaab barabar hai.");
+        showVoiceResponse("🎙️ " + msg); speakText(msg); return;
     }
-
     if (type === 'delete') {
-        showConfirmModal(`Kya aap sach mein "${foundName}" ka pura khata Delete karna chahte hain?`, function() {
-            delete khataRegister[foundName]; localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen(); speakText(`${foundName} ka khata delete ho gaya.`);
-        });
-        return;
+        showConfirmModal(`"${foundName}" ka pura khata Delete karein?`, () => { delete khataRegister[foundName]; localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen(); speakText("Delete ho gaya."); }); return;
     }
+    if (money === 0) { showError("Paise samajh nahi aaye."); return; }
 
-    if (money === 0) { showError("Aapne paise nahi bataye."); return; }
+    let fillers =["ke","ka","pe","par","ko","account","mein","me","khata","khaate","dhoondhkar","add","kar","do","abhi","chadhao","likho","likh","jama","delete","hata","kaat","rupiye","rs","₹","के","का","पे","पर","को","अकाउंट","में","रुपये","रु","लिख","दो","करो","जमा","काट","हटा","और","है","हैं","वाले","की","चढ़ाओ","खाते","हिसाब","लगा","bhai","yaar"];
+    let filtered = words.filter(w => !fillers.includes(w) && !foundName.toLowerCase().split(" ").includes(w) && w !== money.toString());
+    let samaan = filtered.join(" ").trim();
+    if (!samaan) samaan = type === 'udhar' ? "Udhar" : "Jama";
 
-    let fillerWords =["ke","ka","pe","par","ko","account","mein","me","khata","khaate","dhoondhkar","dhoodhkar","add","kar","do","abhi","chadhao","likho","likh","jama","jamma","delete","hata","kaat","rupiye","rupees","rs","₹","के","का","पे","पर","को","अकाउंट","में","रुपये","रु","रुपया","लिख","दो","करो","जमा","काट","हटा","और","है","हैं","वाले","की","चढ़ाओ","खाते","हिसाब","लगा", "bhai", "yaar"];
-    
-    let filteredTokens = wordsArray.filter(w => !fillerWords.includes(w));
-    let nameWords = foundName.toLowerCase().split(" ");
-    filteredTokens = filteredTokens.filter(w => !nameWords.includes(w) && w !== money.toString());
-
-    let samaan = filteredTokens.join(" ").trim();
-    if (samaan === "") samaan = type === 'udhar' ? "Udhar" : "Jama";
-
-    let title = `Voice Entry (${type === 'udhar' ? 'Udhar Likhna' : 'Paise Jama'})`;
-    
-    showTripleInputModal(title, foundName, money, samaan, function(finalName, moneyStr, finalSamaan) {
-        let finalMoney = Number(moneyStr);
-        if (finalName === "" || isNaN(finalMoney) || finalMoney <= 0) { showError("Naam ya paise theek se nahi bhare!"); return; }
-        
-        let exactTime = new Date().toLocaleString("en-IN");
-        let uniqueId = Date.now();
-        
-        if (khataRegister[finalName] === undefined) { khataRegister[finalName] = { totalBalance: 0, history:[] }; }
-        
-        if (type === 'udhar') {
-            khataRegister[finalName].totalBalance += finalMoney;
-            khataRegister[finalName].history.push({ id: uniqueId, type: 'udhar', amount: finalMoney, samaan: finalSamaan, time: exactTime });
-        } else {
-            khataRegister[finalName].totalBalance -= finalMoney;
-            khataRegister[finalName].history.push({ id: uniqueId, type: 'jama', amount: finalMoney, samaan: finalSamaan, time: exactTime });
-        }
-        
-        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
-        updateScreen();
-        speakText(`${finalName} ke khate mein ${finalMoney} rupiye ${type === 'udhar' ? 'likh diye gaye hain' : 'jama kar liye gaye hain'}.`);
+    showTripleInputModal(`Voice Entry (${type === 'udhar' ? 'Udhar Likhna' : 'Paise Jama'})`, foundName, money, samaan, (fn, mStr, fs) => {
+        let m = Number(mStr); if (!fn || isNaN(m) || m <= 0) { showError("Naam ya paise galat hain!"); return; }
+        let time = new Date().toLocaleString("en-IN"), id = Date.now();
+        if (!khataRegister[fn]) khataRegister[fn] = { totalBalance: 0, history:[] };
+        khataRegister[fn].totalBalance += type === 'udhar' ? m : -m;
+        khataRegister[fn].history.push({ id, type, amount: m, samaan: fs, time });
+        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen();
+        speakText(`${fn} ke khate mein ${m} rupiye ${type === 'udhar' ? 'likh diye' : 'jama kar liye'}.`);
     });
 }
 
 /* ==========================================
-   🛒 6. MAIN APP LOGIC (MANUAL ENTRY)
+   ⏰ 5. AUTOMATED ALERTS (11 PM & HOURLY)
+========================================== */
+setInterval(() => {
+    let now = new Date(), h = now.getHours(), m = now.getMinutes();
+    let l11 = localStorage.getItem("lastSpoken11PM"), lHr = localStorage.getItem("lastSpokenHour");
+    let today = now.toLocaleDateString("en-IN"); 
+
+    if (h === 23 && m === 0 && l11 !== today) {
+        localStorage.setItem("lastSpoken11PM", today); localStorage.setItem("lastSpokenHour", h); 
+        let total = 0, dateStr = now.toLocaleString("en-IN").split(",")[0].trim();
+        for (let g in khataRegister) khataRegister[g].history.forEach(b => { if (b.type === 'udhar' && b.time.split(",")[0].trim() === dateStr) total += b.amount; });
+        let din = now.toLocaleDateString('hi-IN', { weekday: 'long' }), tar = now.toLocaleDateString('hi-IN', { day: 'numeric', month: 'long' });
+        let msg = `Aaj ${din}, ${tar} ko total ${total} rupiye ka udhar gaya hai. Udhar ka paisa vasool karte ja, Aage udhar deta ja.`;
+        speakText(msg); showVoiceResponse("🤖 " + msg);
+    }
+    else if (m === 0 && lHr != h && h !== 23) {
+        localStorage.setItem("lastSpokenHour", h);
+        let total = 0; for (let g in khataRegister) total += khataRegister[g].totalBalance;
+        let msg = `Malik, ab tak dukan ka total udhar ${total} rupiye ja chuka hai.`;
+        speakText(msg); showVoiceResponse("🤖 " + msg);
+    }
+}, 30000); 
+
+/* ==========================================
+   🛒 6. MANUAL ENTRY & UI
 ========================================== */
 function loadShopDetails() { document.getElementById("shopNameDisplay").innerText = savedShopName; }
 
-function editShopName() {
-    showSingleInputModal("Dukan ka naya naam dalen:", savedShopName, function(nayaNaam) {
-        if (nayaNaam !== "") { savedShopName = nayaNaam; localStorage.setItem("myShopName", savedShopName); loadShopDetails(); }
-    });
+function editShopName() { 
+    showSingleInputModal("Dukan ka naya naam dalen:", savedShopName, n => { if (n) { savedShopName = n; localStorage.setItem("myShopName", n); loadShopDetails(); } }); 
 }
 
 function calculateShopTotal() {
-    let totalDukanKaUdhar = 0;
-    for (let grahak in khataRegister) { totalDukanKaUdhar += khataRegister[grahak].totalBalance; }
-    document.getElementById("totalShopBalance").innerText = "₹" + totalDukanKaUdhar;
+    let total = 0; for (let g in khataRegister) total += khataRegister[g].totalBalance;
+    document.getElementById("totalShopBalance").innerText = "₹" + total;
 }
 
 function addTransaction(type) {
-    let name = document.getElementById("customerName").value.trim();
-    let moneyStr = document.getElementById("amount").value;
-    let money = Number(moneyStr);
-    let items = document.getElementById("items").value;
-
-    if (name === "" && (moneyStr === "" || money <= 0)) { showError("Naam aur paise dono bharein!"); return; } 
-    else if (name === "") { showError("Naam nahi likha hai!"); return; } 
-    else if (moneyStr === "" || money <= 0) { showError("Paise nahi bhare hain!"); return; }
-
-    let exactTime = new Date().toLocaleString("en-IN");
-    let uniqueId = Date.now(); 
-
-    if (khataRegister[name] === undefined) { khataRegister[name] = { totalBalance: 0, history:[] }; }
-
-    if (type === 'udhar') {
-        khataRegister[name].totalBalance += money;
-        khataRegister[name].history.push({ id: uniqueId, type: 'udhar', amount: money, samaan: items || "Udhar", time: exactTime });
-    } else {
-        khataRegister[name].totalBalance -= money;
-        khataRegister[name].history.push({ id: uniqueId, type: 'jama', amount: money, samaan: items || "Jama kiye", time: exactTime });
-    }
-
+    let name = document.getElementById("customerName").value.trim(), mStr = document.getElementById("amount").value, m = Number(mStr), items = document.getElementById("items").value;
+    if (!name || isNaN(m) || m <= 0) { showError("Sahi Naam aur Paise bharein!"); return; }
+    let time = new Date().toLocaleString("en-IN"), id = Date.now(); 
+    if (!khataRegister[name]) khataRegister[name] = { totalBalance: 0, history:[] };
+    khataRegister[name].totalBalance += type === 'udhar' ? m : -m;
+    khataRegister[name].history.push({ id, type, amount: m, samaan: items || (type === 'udhar'?"Udhar":"Jama"), time });
     localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
     document.getElementById("customerName").value = ""; document.getElementById("amount").value = ""; document.getElementById("items").value = "";
     updateScreen();
 }
 
-function quickTransaction(grahakKaNaam, type) {
-    let title = `"${grahakKaNaam}" ka ${type === 'udhar' ? 'Udhar Likh' : 'Paise Jama'}`;
-    showTripleInputModal(title, grahakKaNaam, "", "", function(finalName, moneyStr, items) {
-        let money = Number(moneyStr);
-        if (isNaN(money) || money <= 0) { showError("Sahi paise nahi bhare hain!"); return; }
-
-        let exactTime = new Date().toLocaleString("en-IN");
-        let uniqueId = Date.now();
-        if (khataRegister[finalName] === undefined) { khataRegister[finalName] = { totalBalance: 0, history:[] }; }
-
-        if (type === 'udhar') {
-            khataRegister[finalName].totalBalance += money;
-            khataRegister[finalName].history.push({ id: uniqueId, type: 'udhar', amount: money, samaan: items || "Udhar", time: exactTime });
-        } else {
-            khataRegister[finalName].totalBalance -= money;
-            khataRegister[finalName].history.push({ id: uniqueId, type: 'jama', amount: money, samaan: items || "Jama kiye", time: exactTime });
-        }
-        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
-        updateScreen();
+function quickTransaction(name, type) {
+    showTripleInputModal(`"${name}" ka ${type === 'udhar' ? 'Udhar Likh' : 'Paise Jama'}`, name, "", "", (fName, mStr, items) => {
+        let m = Number(mStr); if (isNaN(m) || m <= 0) { showError("Sahi paise bharein!"); return; }
+        let time = new Date().toLocaleString("en-IN"), id = Date.now();
+        if (!khataRegister[fName]) khataRegister[fName] = { totalBalance: 0, history:[] };
+        khataRegister[fName].totalBalance += type === 'udhar' ? m : -m;
+        khataRegister[fName].history.push({ id, type, amount: m, samaan: items || (type === 'udhar'?"Udhar":"Jama"), time });
+        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen();
     });
 }
 
-function deleteTransactionItem(grahakKaNaam, transactionID) {
-    let grahakData = khataRegister[grahakKaNaam];
-    let billIndex = grahakData.history.findIndex(bill => bill.id === transactionID);
-    if(billIndex === -1) return;
-    let uskBazaHisaab = grahakData.history[billIndex];
-
-    showConfirmModal(`Kya aap "${uskBazaHisaab.samaan}" ko delete karna chahte hain?`, function() {
-        if (uskBazaHisaab.type === 'udhar') { grahakData.totalBalance -= uskBazaHisaab.amount; } 
-        else { grahakData.totalBalance += uskBazaHisaab.amount; }
-        
-        grahakData.history.splice(billIndex, 1);
-        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
-        updateScreen();
+function deleteTransactionItem(grahak, id) {
+    let idx = khataRegister[grahak].history.findIndex(b => b.id === id);
+    if(idx === -1) return;
+    let b = khataRegister[grahak].history[idx];
+    showConfirmModal(`Kya aap "${b.samaan}" ko delete karna chahte hain?`, () => {
+        khataRegister[grahak].totalBalance += b.type === 'udhar' ? -b.amount : b.amount;
+        khataRegister[grahak].history.splice(idx, 1);
+        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen();
     });
 }
 
-function editCustomerName(puranaNaam) {
-    showSingleInputModal("Grahak ka naya naam likhein:", puranaNaam, function(nayaNaam) {
-        if (nayaNaam === "" || nayaNaam === puranaNaam) return; 
-        if (khataRegister[nayaNaam] !== undefined) { showError("Bhai, is naam ka grahak pehle se dukan mein hai."); return; }
-
-        khataRegister[nayaNaam] = khataRegister[puranaNaam];
-        delete khataRegister[puranaNaam];
-        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
-        updateScreen();
+function editCustomerName(old) {
+    showSingleInputModal("Grahak ka naya naam likhein:", old, n => {
+        if (!n || n === old) return; 
+        if (khataRegister[n]) { showError("Ye naam pehle se hai."); return; }
+        khataRegister[n] = khataRegister[old]; delete khataRegister[old];
+        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen();
     });
 }
 
-function editTransaction(grahakKaNaam, transactionID) {
-    let grahakData = khataRegister[grahakKaNaam];
-    let uskBazaHisaab = grahakData.history.find(bill => bill.id === transactionID);
-    if(!uskBazaHisaab) return; 
-
-    showTripleInputModal("Entry Edit Karein", grahakKaNaam, uskBazaHisaab.amount, uskBazaHisaab.samaan, function(finalName, moneyStr, nayaSamaan) {
-        let nayePaise = Number(moneyStr);
-        if(isNaN(nayePaise) || nayePaise <= 0) { showError("Sahi paise nahi bhare hain!"); return; }
-
-        if (uskBazaHisaab.type === 'udhar') { grahakData.totalBalance = grahakData.totalBalance - uskBazaHisaab.amount + nayePaise; } 
-        else { grahakData.totalBalance = grahakData.totalBalance + uskBazaHisaab.amount - nayePaise; }
-
-        uskBazaHisaab.samaan = nayaSamaan;
-        uskBazaHisaab.amount = nayePaise;
-
-        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
-        updateScreen();
+function editTransaction(grahak, id) {
+    let b = khataRegister[grahak].history.find(x => x.id === id);
+    if(!b) return; 
+    showTripleInputModal("Entry Edit Karein", grahak, b.amount, b.samaan, (fName, mStr, nSamaan) => {
+        let nPaise = Number(mStr); if(isNaN(nPaise) || nPaise <= 0) { showError("Sahi paise bharein!"); return; }
+        khataRegister[grahak].totalBalance += b.type === 'udhar' ? (nPaise - b.amount) : (b.amount - nPaise);
+        b.samaan = nSamaan; b.amount = nPaise;
+        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen();
     });
 }
 
-function sendToWhatsApp(grahakKaNaam) {
-    let grahakKaData = khataRegister[grahakKaNaam];
-    let message = `📘 *${savedShopName} - KhataBook* 📘\n\n👤 *Grahak:* ${grahakKaNaam}\n💰 *Baki Balance:* ₹${grahakKaData.totalBalance}\n\n*--- Hisaab Details ---*\n`;
-
-    grahakKaData.history.forEach(function(bill) {
-        let nishan = bill.type === 'udhar' ? '+ ₹' : '- ₹';
-        message += `🗓️ ${bill.time}\n📝 ${bill.samaan} : ${nishan}${bill.amount}\n\n`;
-    });
-
-    let internetWalaMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/?text=${internetWalaMessage}`, '_blank');
+function sendToWhatsApp(grahak) {
+    let data = khataRegister[grahak];
+    let msg = `📘 *${savedShopName} - KhataBook* 📘\n\n👤 *Grahak:* ${grahak}\n💰 *Baki Balance:* ₹${data.totalBalance}\n\n*--- Hisaab Details ---*\n`;
+    data.history.forEach(b => { msg += `🗓️ ${b.time}\n📝 ${b.samaan} : ${b.type==='udhar'?'+':'-'} ₹${b.amount}\n\n`; });
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-function deleteAccount(grahakKaNaam) {
-    showConfirmModal(`🚨 Kya aap sach mein "${grahakKaNaam}" ka pura khata udana chahte hain?`, function() {
-        delete khataRegister[grahakKaNaam];
-        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
-        updateScreen();
+function deleteAccount(grahak) {
+    showConfirmModal(`🚨 "${grahak}" ka khata udana chahte hain?`, () => {
+        delete khataRegister[grahak]; localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen();
     });
 }
 
-function updateScreen(searchWord = "") {
-    let listDiv = document.getElementById("accountList");
-    listDiv.innerHTML = ""; 
-
-    for (let grahak in khataRegister) {
-        if (grahak.toLowerCase().includes(searchWord.toLowerCase())) {
-            let grahakKaData = khataRegister[grahak];
-            let historyHTML = "";
-            let reversedHistory =[...grahakKaData.history].reverse();
-
-            reversedHistory.forEach(function(bill) {
-                let colorClass = bill.type === 'udhar' ? 'text-red' : 'text-green';
-                let sign = bill.type === 'udhar' ? '+ ₹' : '- ₹';
-
-                historyHTML += `
-                    <li class="history-item">
-                        <div>
-                            <span>${bill.samaan}</span>
-                            <span class="date-time">🕒 ${bill.time}</span>
-                        </div>
-                        <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end;">
-                            <span class="${colorClass}">${sign}${bill.amount}</span>
-                            <div style="display:flex; gap:5px;">
-                                <button class="btn-edit" onclick="editTransaction('${grahak}', ${bill.id})">✏️ Edit</button>
-                                <button class="btn-delete-item" onclick="deleteTransactionItem('${grahak}', ${bill.id})">🗑️ Delete</button>
-                            </div>
-                        </div>
-                    </li>
-                `;
-            });
-
-            let balanceColor = grahakKaData.totalBalance > 0 ? "color: #ff4757;" : "color: #2ed573;";
-
-            listDiv.innerHTML += `
-                <div class="account-card">
-                    <div class="card-header">
-                        <div class="header-row">
-                            <h4 onclick="editCustomerName('${grahak}')" style="cursor:pointer;" title="Naam badalne ke liye click karein">👤 ${grahak} ✏️</h4>
-                            <span style="font-weight:bold; font-size:18px; ${balanceColor}">₹${grahakKaData.totalBalance} Baki</span>
-                        </div>
-                        
-                        <div class="action-buttons">
-                            <button class="btn-whatsapp" onclick="sendToWhatsApp('${grahak}')">📲 WhatsApp</button>
-                            <button class="btn-delete" onclick="deleteAccount('${grahak}')">🗑️ Khata Delete</button>
-                        </div>
-                        
-                        <div class="quick-actions">
-                            <button class="btn-quick-udhar" onclick="quickTransaction('${grahak}', 'udhar')">➕ Naya Udhar Likh</button>
-                            <button class="btn-quick-jama" onclick="quickTransaction('${grahak}', 'jama')">💰 Paise Jama Kar</button>
-                        </div>
-                    </div>
-                    <ul class="history-list">
-                        ${historyHTML}
-                    </ul>
-                </div>
-            `;
-        }
-    }
-    calculateShopTotal();
-}
-
-function searchCustomer() {
-    let word = document.getElementById("searchInput").value;
-    updateScreen(word);
-}
-
-loadShopDetails();
-updateScreen();
+function updateScreen(search = "") {
+    let listDiv = document.getElementById("accountList"); listDiv.innerHTML =
