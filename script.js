@@ -300,4 +300,22 @@ function deleteAccount(grahak) {
 }
 
 function updateScreen(search = "") {
-    let listDiv = document.getElementById("accountList"); listDiv.innerHTML =
+    let listDiv = document.getElementById("accountList"); listDiv.innerHTML = ""; 
+    for (let g in khataRegister) {
+        if (g.toLowerCase().includes(search.toLowerCase())) {
+            let data = khataRegister[g], histHTML = "";
+            [...data.history].reverse().forEach(b => {
+                let col = b.type === 'udhar' ? 'text-red' : 'text-green', sign = b.type === 'udhar' ? '+' : '-';
+                histHTML += `<li class="history-item"><div><span>${b.samaan}</span><span class="date-time">🕒 ${b.time}</span></div><div style="text-align:right;"><span class="${col}">${sign} ₹${b.amount}</span><div style="display:flex; gap:5px; margin-top:5px;"><button class="btn-edit" onclick="editTransaction('${g}', ${b.id})">✏️ Edit</button><button class="btn-delete-item" onclick="deleteTransactionItem('${g}', ${b.id})">🗑️ Delete</button></div></div></li>`;
+            });
+            let bCol = data.totalBalance > 0 ? "color:#ff4757;" : "color:#2ed573;";
+            listDiv.innerHTML += `<div class="account-card"><div class="card-header"><div class="header-row"><h4 onclick="editCustomerName('${g}')" style="cursor:pointer;">👤 ${g} ✏️</h4><span style="font-weight:bold; font-size:18px; ${bCol}">₹${data.totalBalance} Baki</span></div><div class="action-buttons"><button class="btn-whatsapp" onclick="sendToWhatsApp('${g}')">📲 WhatsApp</button><button class="btn-delete" onclick="deleteAccount('${g}')">🗑️ Khata Delete</button></div><div class="quick-actions"><button class="btn-quick-udhar" onclick="quickTransaction('${g}', 'udhar')">➕ Naya Udhar</button><button class="btn-quick-jama" onclick="quickTransaction('${g}', 'jama')">💰 Paise Jama</button></div></div><ul class="history-list">${histHTML}</ul></div>`;
+        }
+    }
+    calculateShopTotal();
+}
+
+function searchCustomer() { updateScreen(document.getElementById("searchInput").value); }
+
+// Start execution
+loadShopDetails(); updateScreen();
