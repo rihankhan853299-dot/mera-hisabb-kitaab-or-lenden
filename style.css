@@ -12,7 +12,6 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 .dashboard p { margin: 0; font-size: 16px; opacity: 0.9; } 
 .dashboard h1 { margin: 10px 0 15px 0; font-size: 40px; font-weight: bold; } 
 
-/* Naya History Button */
 .btn-history { background-color: #ff9f43; color: white; border: none; padding: 8px 15px; font-size: 12px; font-weight: bold; border-radius: 20px; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.2); transition: 0.3s; }
 .btn-history:hover { background-color: #f39c12; }
 
