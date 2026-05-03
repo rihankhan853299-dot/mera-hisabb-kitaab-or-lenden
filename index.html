@@ -9,6 +9,7 @@
 <body>
 
     <div class="app-container">
+        
         <!-- Header -->
         <div class="app-header">
             <div class="rk-logo-box">
@@ -26,6 +27,8 @@
                 <span id="shopNameDisplay" onclick="editShopName()" title="Dukan ka naam badalne ke liye click karein">Apni Dukan</span> Ka Total Udhar ✏️
             </p> 
             <h1 id="totalShopBalance">₹0</h1> 
+            <!-- 🌟 NAYA FEATURE 1: Dukan Ki History Button -->
+            <button class="btn-history" onclick="showShopHistory()">📅 Dukan Ki Udhar History</button>
         </div>
 
         <!-- Search Bar -->
@@ -59,7 +62,7 @@
          🌟 CUSTOM MODALS (POPUPS)
     =========================================== -->
 
-    <!-- 1. Alert Popup -->
+    <!-- Alert / Robot Popup -->
     <div id="customAlertOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box">
             <div class="alert-icon" id="alertIconDisplay">⚠️</div>
@@ -68,7 +71,7 @@
         </div>
     </div>
 
-    <!-- 2. Single Input Popup -->
+    <!-- Single Input Popup -->
     <div id="singleInputOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box">
             <h3 id="singleInputTitle">Naya Naam Dalen</h3>
@@ -80,11 +83,11 @@
         </div>
     </div>
 
-    <!-- 3. 🌟 NAYA: Voice Entry Confirmation Popup (Isme Naam badalne ka option bhi hai!) -->
+    <!-- Triple Input Popup -->
     <div id="tripleInputOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box">
             <h3 id="tripleInputTitle">Voice Entry Confirm Karein</h3>
-            <p style="font-size:12px; color:gray; margin-bottom:10px;">Agar AI ne galti ki hai, toh yahan theek kar lein:</p>
+            <p style="font-size:12px; color:gray; margin-bottom:10px;">AI ne galti ki hai, toh yahan theek kar lein:</p>
             <input type="text" id="tripleInputName" placeholder="👤 Grahak Ka Naam">
             <input type="number" id="tripleInputMoney" placeholder="₹ Amount">
             <input type="text" id="tripleInputItem" placeholder="🛍️ Samaan">
@@ -95,15 +98,26 @@
         </div>
     </div>
 
-    <!-- 4. Confirm Delete Popup -->
+    <!-- Confirm Delete Popup -->
     <div id="confirmOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box">
-            <div class="alert-icon" style="color: #ff4757;">🗑️</div>
+            <div class="alert-icon" id="confirmIconDisplay" style="color: #ff4757;">🗑️</div>
             <h3 id="confirmTitle">Kya aap sure hain?</h3>
             <div class="modal-button-group">
-                <button id="btnConfirmYes" class="btn-udhar">Haan, Delete</button>
+                <button id="btnConfirmYes" class="btn-udhar">Haan</button>
                 <button onclick="closeAllModals()" class="btn-jama">Nahi</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 🌟 NAYA MODAL: Dukan Ki History -->
+    <div id="historyOverlay" class="custom-modal-overlay">
+        <div class="custom-modal-box" style="max-height: 80vh; overflow-y: auto;">
+            <h3 style="color: #1e3c72; border-bottom: 2px solid #eee; padding-bottom:10px;">📅 Dukan Ki Udhar History</h3>
+            <ul id="historyDataList" class="history-list" style="text-align: left; margin-bottom: 15px;">
+                <!-- JS se history aayegi -->
+            </ul>
+            <button onclick="closeAllModals()" class="btn-modal-ok">Band Karein</button>
         </div>
     </div>
 
