@@ -2,7 +2,7 @@ let khataRegister = JSON.parse(localStorage.getItem("proKhataV5")) || {};
 let savedShopName = localStorage.getItem("myShopName") || "Apni Dukan";
 
 /* ==========================================
-   🛠️ UI & MODAL CONTROLS
+   🛠️ 1. UI & MODAL CONTROLS
 ========================================== */
 function closeAllModals() { document.querySelectorAll('.custom-modal-overlay').forEach(el => el.style.display = 'none'); }
 function showError(msg) { document.getElementById("alertIconDisplay").innerText = "⚠️"; document.getElementById("customAlertMessage").innerText = msg; document.getElementById("customAlertOverlay").style.display = "flex"; }
@@ -11,7 +11,7 @@ function showSingleInputModal(title, defaultVal, callback) { document.getElement
 function showConfirmModal(msg, callback, isWarning = false) { document.getElementById("confirmIconDisplay").innerText = isWarning ? "🚨" : "🗑️"; document.getElementById("confirmTitle").innerText = msg; document.getElementById("confirmOverlay").style.display = "flex"; document.getElementById("btnConfirmYes").onclick = function() { closeAllModals(); callback(); }; }
 
 /* ==========================================
-   🗣️ TEXT-TO-SPEECH
+   🗣️ 2. TEXT-TO-SPEECH
 ========================================== */
 function speakText(text) {
     if ('speechSynthesis' in window) {
@@ -21,7 +21,7 @@ function speakText(text) {
 }
 
 /* ==========================================
-   🎙️ DIRECT VOICE AI & CHATBOT
+   🎙️ 3. SUPER AI (DIRECT ENTRY & CHATBOT)
 ========================================== */
 function startVoiceRecognition() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -33,24 +33,22 @@ function startVoiceRecognition() {
     rec.onspeechend = () => { btn.classList.remove("recording"); btn.innerHTML = "<span class='mic-icon'>🎙️</span> Bolkar Likhain ya Poochhein"; stat.innerText = "Soch raha hoon..."; };
     rec.onresult = (e) => { let text = e.results[0][0].transcript.toLowerCase(); stat.innerText = `Aapne bola: "${text}"`; processVoiceCommand(text); };
     rec.onerror = () => { btn.classList.remove("recording"); btn.innerHTML = "<span class='mic-icon'>🎙️</span> Bolkar Likhain"; showError("Theek se sunai nahi diya."); };
-    
     window.speechSynthesis.cancel(); rec.start();
 }
 
 function processVoiceCommand(text) {
     let t = text.toLowerCase();
     
-    // 🌟 1. EASTER EGG
-    if (/(kisne banaya|tumhe kisne|aapko kisne|किसने बनाया|किसने)/i.test(t)) {
-        let msg = "Mujhe Rihan Khan ne banaya hai, aur Khan Sahab Salai ke rahne wale hain, aur ye chahte hain ki India independent ban jaye.";
-        showVoiceResponse("🎙️ " + msg); speakText(msg); return; 
+    // 🌟 Easter Egg
+    if (["kisne banaya", "tumhe kisne", "aapko kisne", "किसने बनाया", "किसने"].some(w => t.includes(w))) {
+        let msg = "Mujhe Rihan Khan ne banaya hai, aur Khan Sahab Salai ke rahne wale hain, aur ye chahte hain ki India independent ban jaye."; showVoiceResponse("🎙️ " + msg); speakText(msg); return; 
     }
 
-    // 🌟 2. ADVANCED AI CHATBOT QUERIES (A to Z Sawaal)
+    // 🌟 ADVANCED AI CHATBOT QUERIES
     if (/(sabse zyada udhar|sabse jyada udhar|sabse adhik udhar|सबसे ज्यादा उधार)/i.test(t)) {
         let maxName = "", maxAmt = 0;
         for (let g in khataRegister) { if(khataRegister[g].totalBalance > maxAmt) { maxAmt = khataRegister[g].totalBalance; maxName = g; } }
-        let msg = maxName ? `Dukan ka sabse zyada udhar ${maxName} par hai, jo ki ${maxAmt} rupiye hai.` : "Dukan mein kisi par udhar nahi hai.";
+        let msg = maxName ? `Dukan ka sabse zyada udhar ${maxName} par hai, jo ki ${maxAmt} rupiye hai.` : "Dukan mein abhi kisi par udhar nahi hai.";
         showVoiceResponse("🤖 " + msg); speakText(msg); return;
     }
 
@@ -60,7 +58,7 @@ function processVoiceCommand(text) {
         let msg = `Aaj dukan se total ${todayTotal} rupiye ka udhar gaya hai.`; showVoiceResponse("🤖 " + msg); speakText(msg); return;
     }
 
-    if (/(aaj kitna jama|aaj ka jama|aaj kitne paise aaye|आज कितना जमा)/i.test(t)) {
+    if (/(aaj kitna jama|aaj ka jama|aaj total jama|aaj kitne paise aaye|आज कितना जमा)/i.test(t)) {
         let todayStr = new Date().toLocaleString("en-IN").split(",")[0].trim(), todayTotal = 0;
         for (let g in khataRegister) khataRegister[g].history.forEach(b => { if (b.type === 'jama' && b.time.split(",")[0].trim() === todayStr) todayTotal += b.amount; });
         let msg = `Aaj dukan mein total ${todayTotal} rupiye jama hue hain.`; showVoiceResponse("🤖 " + msg); speakText(msg); return;
@@ -92,7 +90,7 @@ function processVoiceCommand(text) {
         let msg = arr.length ? "Udhar is prakar hai: " + arr.join(", ") : "Kisi par udhar nahi hai."; showVoiceResponse("🤖 " + msg); speakText(msg); return;
     }
 
-    // 🌟 3. DIRECT ENTRY LOGIC (NO POPUP)
+    // --- TRANSACTION EXTRACTION LOGIC ---
     let clean = t.replace(/[₹$]/g, " ").replace(/\s+/g, " ").trim();
     let amtMatch = clean.match(/\d+/); let money = amtMatch ? Number(amtMatch[0]) : 0;
 
@@ -103,7 +101,6 @@ function processVoiceCommand(text) {
 
     let words = clean.split(" "), foundName = "";
     for (let name of Object.keys(khataRegister)) if (clean.includes(name.toLowerCase())) { foundName = name; break; }
-
     if (!foundName) {
         let idx = words.findIndex(w =>["ke","ka","pe","par","ko","account","mein","me","khata","khaate","के","का","पे","पर","को","अकाउंट","में","खाते","खाता"].includes(w));
         foundName = idx > 0 ? words.slice(0, idx).join(" ") : words[0];
@@ -124,12 +121,22 @@ function processVoiceCommand(text) {
 
     if (money === 0) { speakText("Paise samajh nahi aaye."); showError("Paise samajh nahi aaye."); return; }
 
-    let fillers =["ke","ka","pe","par","ko","account","mein","me","khata","khaate","dhoondhkar","add","kar","do","abhi","chadhao","likho","likh","jama","delete","hata","kaat","rupiye","rs","₹","के","का","पे","पर","को","अकाउंट","में","रुपये","रु","लिख","दो","करो","जमा","काट","हटा","और","है","हैं","वाले","की","चढ़ाओ","खाते","हिसाब","लगा","bhai","yaar"];
+    // 🌟 FIX THE PROBLEM: Ekdum Khatarnak Filler Words ki List (Taaki "चढ़ाव" Samaan mein na aaye)
+    let fillers =[
+        "ke","ka","ki","pe","par","ko","account","mein","me","khata","khaate","hisaab",
+        "dhoondhkar","add","kar","do","abhi","chadhao","chadhav","chadao","chada","daal","daalo",
+        "likho","likh","jama","jamma","delete","hata","kaat","rupiye","rs","₹","rupees","rupee","rupya",
+        "के","का","की","पे","पर","को","अकाउंट","में","रुपये","रु","रुपए","रूपये","रुपया",
+        "लिख","लिखो","दो","दीजिये","करो","कर","जमा","काट","हटा","और","है","हैं","वाले","चढ़ाओ","चढ़ाव","चढाव","चडाओ","चढ़ा","खाते","खाता","हिसाब","लगा","लगाओ","डाल","डालो",
+        "bhai","yaar", "aur", "ab"
+    ];
+    
+    // Kachra Words ko Filter out karna
     let filtered = words.filter(w => !fillers.includes(w) && !foundName.toLowerCase().split(" ").includes(w) && w !== money.toString());
     let samaan = filtered.join(" ").trim();
     if (!samaan) samaan = type === 'udhar' ? "Udhar" : "Jama";
 
-    // ✅ MAGIC: DIRECT SAVE WITHOUT POPUP
+    // ✅ DIRECT SAVE WITHOUT POPUP
     let exactTime = new Date().toLocaleString("en-IN"), uniqueId = Date.now();
     if (!khataRegister[foundName]) khataRegister[foundName] = { totalBalance: 0, history:[] };
     
@@ -146,9 +153,9 @@ function processVoiceCommand(text) {
     setTimeout(() => { stat.style.color = "#94a3b8"; stat.innerText = "Poochiye: Aaj kitna udhar gaya?"; }, 4000);
 }
 
-/* ==========================================
-   ⏰ 4. AUTOMATED ALERTS (11 PM & HOURLY)
-========================================== */
+// ==========================================
+// ⏰ 4. AUTOMATED ALERTS (11 PM & HOURLY)
+// ==========================================
 setInterval(() => {
     let now = new Date(), h = now.getHours(), m = now.getMinutes();
     let l11 = localStorage.getItem("lastSpoken11PM"), lHr = localStorage.getItem("lastSpokenHour");
@@ -168,9 +175,9 @@ setInterval(() => {
     }
 }, 30000); 
 
-/* ==========================================
-   📊 5. DUKAN KI HISTORY & MANUAL ENTRY UI
-========================================== */
+// ==========================================
+// 📊 5. DUKAN KI HISTORY & MANUAL ENTRY UI
+// ==========================================
 function showShopHistory() {
     let historyByDate = {};
     for (let g in khataRegister) {
