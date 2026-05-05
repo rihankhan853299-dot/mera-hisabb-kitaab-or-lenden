@@ -16,7 +16,7 @@ body { background: #0f172a; margin: 0; padding: 10px; display: flex; justify-con
 .dashboard-wrapper { padding: 0 20px; }
 .dashboard-card { padding: 30px 20px; border-radius: 24px; text-align: center; position: relative; }
 .shop-name { margin: 0 0 10px 0; font-size: 15px; font-weight: 600; color: #cbd5e1; }
-#shopNameDisplay { color: #f59e0b; }
+#shopNameDisplay { color: #f59e0b; cursor: pointer; }
 .balance-label { margin: 0; font-size: 13px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;}
 .neon-text { margin: 5px 0 20px 0; font-size: 50px; font-weight: 800; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.3); }
 .btn-history { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 10px 20px; font-size: 13px; font-weight: 600; border-radius: 20px; cursor: pointer; transition: 0.3s; }
@@ -31,7 +31,7 @@ body { background: #0f172a; margin: 0; padding: 10px; display: flex; justify-con
 
 /* Inputs & Manual Entry */
 .action-section { padding: 10px 20px; }
-.premium-input { width: 100%; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; font-size: 15px; background: rgba(0,0,0,0.2); color: #fff; outline: none; transition: 0.3s; }
+.premium-input { width: 100%; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; font-size: 15px; background: rgba(0,0,0,0.2); color: #fff; outline: none; transition: 0.3s; box-sizing: border-box; }
 .premium-input::placeholder { color: #64748b; }
 .premium-input:focus { border-color: #3b82f6; background: rgba(0,0,0,0.4); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
 .search-input { border-radius: 50px; padding-left: 20px; }
@@ -58,15 +58,14 @@ body { background: #0f172a; margin: 0; padding: 10px; display: flex; justify-con
 .btn-quick-udhar { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 12px; font-size: 12px; font-weight: 700; border-radius: 8px; flex: 1; cursor: pointer; }
 .btn-quick-jama { background-color: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 8px 12px; font-size: 12px; font-weight: 700; border-radius: 8px; flex: 1; cursor: pointer; }
 
-/* 🌟 Edit & Delete Item Buttons (Fixed) */
+/* Edit & Delete Transaction Buttons */
 .history-list { list-style: none; padding: 0; margin: 0; }
 .history-item { padding: 15px 18px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
 .text-red { color: #ef4444; font-weight: 800; font-size: 16px;} 
 .text-green { color: #10b981; font-weight: 800; font-size: 16px;}
 .date-time { display: block; font-size: 11px; color: #64748b; margin-top: 4px; }
-
-.btn-edit { background-color: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); padding: 4px 10px; font-size: 11px; border-radius: 6px; margin-top: 5px; cursor: pointer; font-weight: 600; transition: 0.3s;}
-.btn-delete-item { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 4px 10px; font-size: 11px; border-radius: 6px; margin-top: 5px; cursor:pointer; font-weight: 600; transition: 0.3s;}
+.btn-edit { background-color: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59,130,246,0.3); padding: 4px 10px; font-size: 11px; border-radius: 6px; margin-top: 5px; cursor: pointer; font-weight: 600;}
+.btn-delete-item { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 4px 10px; font-size: 11px; border-radius: 6px; margin-top: 5px; cursor:pointer; font-weight: 600;}
 
 /* Modals */
 .custom-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(8px); }
