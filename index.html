@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro KhataBook - VIP Edition</title>
+    <title>Pro KhataBook - Premium Edition</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 </head>
@@ -18,7 +18,7 @@
             </div>
             <div class="header-text">
                 <h2>Mera KhataBook</h2>
-                <span class="developer-tag">By <b>RK Solution</b> | VIP Edition</span>
+                <span class="developer-tag">Developed by <b>RK Solution</b></span>
             </div>
         </div>
 
@@ -30,11 +30,11 @@
                 </p>
                 <p class="balance-label">Total Market Udhar</p> 
                 <h1 id="totalShopBalance" class="neon-text">₹0</h1> 
-                <button class="btn-history" onclick="showShopHistory()">📊 Dukan Ki Analytics & History</button>
+                <button class="btn-history" onclick="showShopHistory()">📊 Dukan Analytics & History</button>
             </div>
         </div>
 
-        <!-- Glowing Mic Section (Direct Entry) -->
+        <!-- Glowing Mic Section (Direct Entry - No Popup) -->
         <div class="mic-section">
             <button id="micBtn" class="btn-mic-glowing" onclick="startVoiceRecognition()">
                 <span class="mic-icon">🎙️</span> Bolkar Likhain ya Poochhein
@@ -42,8 +42,9 @@
             <p id="micStatus" class="mic-status">Poochiye: "Aaj kitna udhar gaya?"</p>
         </div>
 
-        <!-- Manual Entry Section -->
+        <!-- Search & Manual Entry Section -->
         <div class="action-section"> 
+            <!-- 🌟 FIX: Search Bar ab 100% kaam karega -->
             <input type="text" id="searchInput" class="premium-input search-input" onkeyup="searchCustomer()" placeholder="🔍 Grahak dhoondhein..."> 
             
             <div class="manual-entry-card glass-panel">
@@ -67,7 +68,11 @@
 
     </div>
 
-    <!-- Modals (Popups) -->
+    <!-- ==========================================
+         🌟 CUSTOM MODALS (POPUPS) - SAB FIX HAIN
+    =========================================== -->
+    
+    <!-- 1. Alert / Robot Answer Popup -->
     <div id="customAlertOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box glass-panel">
             <div class="alert-icon" id="alertIconDisplay">⚠️</div>
@@ -76,6 +81,7 @@
         </div>
     </div>
 
+    <!-- 2. Single Input Popup (Naam badalne ke liye) -->
     <div id="singleInputOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box glass-panel">
             <h3 id="singleInputTitle">Naya Naam Dalen</h3>
@@ -87,6 +93,20 @@
         </div>
     </div>
 
+    <!-- 🌟 3. FIX: Double Input Popup (Manual Edit / Quick Button ke liye WAPAS ADD KIYA) -->
+    <div id="doubleInputOverlay" class="custom-modal-overlay">
+        <div class="custom-modal-box glass-panel">
+            <h3 id="doubleInputTitle">Edit Karein</h3>
+            <input type="number" id="doubleInput1" class="premium-input" placeholder="₹ Amount">
+            <input type="text" id="doubleInput2" class="premium-input" placeholder="🛍️ Samaan">
+            <div class="modal-button-group">
+                <button id="btnDoubleSave" class="btn-vip btn-green">OK (Save)</button>
+                <button onclick="closeAllModals()" class="btn-vip btn-red">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Confirm Delete Popup -->
     <div id="confirmOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box glass-panel">
             <div class="alert-icon" id="confirmIconDisplay" style="color: #ff4757;">🗑️</div>
@@ -98,6 +118,7 @@
         </div>
     </div>
 
+    <!-- 5. History Analytics Popup -->
     <div id="historyOverlay" class="custom-modal-overlay">
         <div class="custom-modal-box glass-panel history-modal">
             <h3 class="history-title">📊 Dukan Analytics</h3>
