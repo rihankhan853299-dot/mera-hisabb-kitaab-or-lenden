@@ -2,7 +2,7 @@ let khataRegister = JSON.parse(localStorage.getItem("proKhataV5")) || {};
 let savedShopName = localStorage.getItem("myShopName") || "Apni Dukan";
 
 /* ==========================================
-   🛠️ 1. UI & MODAL CONTROLS
+   🛠️ UI & MODAL CONTROLS
 ========================================== */
 function closeAllModals() { document.querySelectorAll('.custom-modal-overlay').forEach(el => el.style.display = 'none'); }
 function showError(msg) { document.getElementById("alertIconDisplay").innerText = "⚠️"; document.getElementById("customAlertMessage").innerText = msg; document.getElementById("customAlertOverlay").style.display = "flex"; }
@@ -10,8 +10,24 @@ function showVoiceResponse(msg) { document.getElementById("alertIconDisplay").in
 function showSingleInputModal(title, defaultVal, callback) { document.getElementById("singleInputTitle").innerText = title; let input = document.getElementById("singleInputValue"); input.value = defaultVal; document.getElementById("singleInputOverlay").style.display = "flex"; input.focus(); document.getElementById("btnSingleSave").onclick = function() { closeAllModals(); callback(input.value.trim()); }; }
 function showConfirmModal(msg, callback, isWarning = false) { document.getElementById("confirmIconDisplay").innerText = isWarning ? "🚨" : "🗑️"; document.getElementById("confirmTitle").innerText = msg; document.getElementById("confirmOverlay").style.display = "flex"; document.getElementById("btnConfirmYes").onclick = function() { closeAllModals(); callback(); }; }
 
+// 🌟 FIX: Triple Input Modal Edit karne ke liye wapas add kiya gaya!
+function showTripleInputModal(title, nameVal, moneyVal, itemVal, callback) {
+    document.getElementById("tripleInputTitle").innerText = title;
+    document.getElementById("tripleInputName").value = nameVal;
+    document.getElementById("tripleInputMoney").value = moneyVal;
+    document.getElementById("tripleInputItem").value = itemVal;
+    document.getElementById("tripleInputOverlay").style.display = "flex";
+    document.getElementById("btnTripleSave").onclick = function() {
+        let finalName = document.getElementById("tripleInputName").value.trim();
+        let finalMoney = document.getElementById("tripleInputMoney").value;
+        let finalItem = document.getElementById("tripleInputItem").value.trim();
+        closeAllModals();
+        callback(finalName, finalMoney, finalItem);
+    };
+}
+
 /* ==========================================
-   🗣️ 2. TEXT-TO-SPEECH
+   🗣️ TEXT-TO-SPEECH
 ========================================== */
 function speakText(text) {
     if ('speechSynthesis' in window) {
@@ -21,7 +37,7 @@ function speakText(text) {
 }
 
 /* ==========================================
-   🎙️ 3. SUPER AI (DIRECT ENTRY & CHATBOT)
+   🎙️ DIRECT VOICE AI & CHATBOT
 ========================================== */
 function startVoiceRecognition() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -40,7 +56,7 @@ function processVoiceCommand(text) {
     let t = text.toLowerCase();
     
     // 🌟 Easter Egg
-    if (["kisne banaya", "tumhe kisne", "aapko kisne", "किसने बनाया", "किसने"].some(w => t.includes(w))) {
+    if (/(kisne banaya|tumhe kisne|aapko kisne|किसने बनाया|किसने)/i.test(t)) {
         let msg = "Mujhe Rihan Khan ne banaya hai, aur Khan Sahab Salai ke rahne wale hain, aur ye chahte hain ki India independent ban jaye."; showVoiceResponse("🎙️ " + msg); speakText(msg); return; 
     }
 
@@ -48,8 +64,7 @@ function processVoiceCommand(text) {
     if (/(sabse zyada udhar|sabse jyada udhar|sabse adhik udhar|सबसे ज्यादा उधार)/i.test(t)) {
         let maxName = "", maxAmt = 0;
         for (let g in khataRegister) { if(khataRegister[g].totalBalance > maxAmt) { maxAmt = khataRegister[g].totalBalance; maxName = g; } }
-        let msg = maxName ? `Dukan ka sabse zyada udhar ${maxName} par hai, jo ki ${maxAmt} rupiye hai.` : "Dukan mein abhi kisi par udhar nahi hai.";
-        showVoiceResponse("🤖 " + msg); speakText(msg); return;
+        let msg = maxName ? `Dukan ka sabse zyada udhar ${maxName} par hai, jo ki ${maxAmt} rupiye hai.` : "Dukan mein kisi par udhar nahi hai."; showVoiceResponse("🤖 " + msg); speakText(msg); return;
     }
 
     if (/(aaj kitna udhar|aaj ka udhar|aaj total udhar|आज कितना उधार)/i.test(t)) {
@@ -58,7 +73,7 @@ function processVoiceCommand(text) {
         let msg = `Aaj dukan se total ${todayTotal} rupiye ka udhar gaya hai.`; showVoiceResponse("🤖 " + msg); speakText(msg); return;
     }
 
-    if (/(aaj kitna jama|aaj ka jama|aaj total jama|aaj kitne paise aaye|आज कितना जमा)/i.test(t)) {
+    if (/(aaj kitna jama|aaj ka jama|aaj kitne paise aaye|आज कितना जमा)/i.test(t)) {
         let todayStr = new Date().toLocaleString("en-IN").split(",")[0].trim(), todayTotal = 0;
         for (let g in khataRegister) khataRegister[g].history.forEach(b => { if (b.type === 'jama' && b.time.split(",")[0].trim() === todayStr) todayTotal += b.amount; });
         let msg = `Aaj dukan mein total ${todayTotal} rupiye jama hue hain.`; showVoiceResponse("🤖 " + msg); speakText(msg); return;
@@ -121,17 +136,7 @@ function processVoiceCommand(text) {
 
     if (money === 0) { speakText("Paise samajh nahi aaye."); showError("Paise samajh nahi aaye."); return; }
 
-    // 🌟 FIX THE PROBLEM: Ekdum Khatarnak Filler Words ki List (Taaki "चढ़ाव" Samaan mein na aaye)
-    let fillers =[
-        "ke","ka","ki","pe","par","ko","account","mein","me","khata","khaate","hisaab",
-        "dhoondhkar","add","kar","do","abhi","chadhao","chadhav","chadao","chada","daal","daalo",
-        "likho","likh","jama","jamma","delete","hata","kaat","rupiye","rs","₹","rupees","rupee","rupya",
-        "के","का","की","पे","पर","को","अकाउंट","में","रुपये","रु","रुपए","रूपये","रुपया",
-        "लिख","लिखो","दो","दीजिये","करो","कर","जमा","काट","हटा","और","है","हैं","वाले","चढ़ाओ","चढ़ाव","चढाव","चडाओ","चढ़ा","खाते","खाता","हिसाब","लगा","लगाओ","डाल","डालो",
-        "bhai","yaar", "aur", "ab"
-    ];
-    
-    // Kachra Words ko Filter out karna
+    let fillers =["ke","ka","ki","pe","par","ko","account","mein","me","khata","khaate","hisaab","dhoondhkar","add","kar","do","abhi","chadhao","chadhav","chadao","chada","daal","daalo","likho","likh","jama","jamma","delete","hata","kaat","rupiye","rs","₹","rupees","rupee","rupya","के","का","की","पे","पर","को","अकाउंट","में","रुपये","रु","रुपए","रूपये","रुपया","लिख","लिखो","दो","दीजिये","करो","कर","जमा","काट","हटा","और","है","हैं","वाले","चढ़ाओ","चढ़ाव","चढाव","चडाओ","चढ़ा","खाते","खाता","हिसाब","लगा","लगाओ","डाल","डालो","bhai","yaar", "aur", "ab"];
     let filtered = words.filter(w => !fillers.includes(w) && !foundName.toLowerCase().split(" ").includes(w) && w !== money.toString());
     let samaan = filtered.join(" ").trim();
     if (!samaan) samaan = type === 'udhar' ? "Udhar" : "Jama";
@@ -209,6 +214,29 @@ function addTransaction(type) {
     document.getElementById("customerName").value = ""; document.getElementById("amount").value = ""; document.getElementById("items").value = ""; updateScreen();
 }
 
+// 🌟 FIX: Quick Action (Udhar/Jama) aur Edit Buttons Wapas Aa Gaye Hain!
+function quickTransaction(grahakKaNaam, type) {
+    let title = `"${grahakKaNaam}" ka ${type === 'udhar' ? 'Udhar Likh' : 'Paise Jama'}`;
+    showTripleInputModal(title, grahakKaNaam, "", "", function(finalName, moneyStr, items) {
+        let money = Number(moneyStr);
+        if (isNaN(money) || money <= 0) { showError("Aapne sahi paise nahi bhare hain!"); return; }
+
+        let exactTime = new Date().toLocaleString("en-IN");
+        let uniqueId = Date.now();
+        if (khataRegister[finalName] === undefined) { khataRegister[finalName] = { totalBalance: 0, history:[] }; }
+
+        if (type === 'udhar') {
+            khataRegister[finalName].totalBalance += money;
+            khataRegister[finalName].history.push({ id: uniqueId, type: 'udhar', amount: money, samaan: items || "Udhar", time: exactTime });
+        } else {
+            khataRegister[finalName].totalBalance -= money;
+            khataRegister[finalName].history.push({ id: uniqueId, type: 'jama', amount: money, samaan: items || "Jama kiye", time: exactTime });
+        }
+        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
+        updateScreen();
+    });
+}
+
 function deleteTransactionItem(grahak, id) {
     let idx = khataRegister[grahak].history.findIndex(b => b.id === id); if(idx === -1) return; let b = khataRegister[grahak].history[idx];
     showConfirmModal(`Kya aap delete karna chahte hain?`, () => {
@@ -218,6 +246,26 @@ function deleteTransactionItem(grahak, id) {
 }
 
 function editCustomerName(old) { showSingleInputModal("Naya naam likhein:", old, n => { if (!n || n === old) return; if (khataRegister[n]) { showError("Naam pehle se hai."); return; } khataRegister[n] = khataRegister[old]; delete khataRegister[old]; localStorage.setItem("proKhataV5", JSON.stringify(khataRegister)); updateScreen(); }); }
+
+function editTransaction(grahakKaNaam, transactionID) {
+    let grahakData = khataRegister[grahakKaNaam];
+    let uskBazaHisaab = grahakData.history.find(bill => bill.id === transactionID);
+    if(!uskBazaHisaab) return; 
+
+    showTripleInputModal("Entry Edit Karein", grahakKaNaam, uskBazaHisaab.amount, uskBazaHisaab.samaan, function(finalName, moneyStr, nayaSamaan) {
+        let nayePaise = Number(moneyStr);
+        if(isNaN(nayePaise) || nayePaise <= 0) { showError("Aapne sahi paise nahi bhare hain!"); return; }
+
+        if (uskBazaHisaab.type === 'udhar') { grahakData.totalBalance = grahakData.totalBalance - uskBazaHisaab.amount + nayePaise; } 
+        else { grahakData.totalBalance = grahakData.totalBalance + uskBazaHisaab.amount - nayePaise; }
+
+        uskBazaHisaab.samaan = nayaSamaan;
+        uskBazaHisaab.amount = nayePaise;
+
+        localStorage.setItem("proKhataV5", JSON.stringify(khataRegister));
+        updateScreen();
+    });
+}
 
 function sendToWhatsApp(grahak) {
     let data = khataRegister[grahak], msg = `📘 *${savedShopName} - KhataBook* 📘\n\n👤 *Grahak:* ${grahak}\n💰 *Baki Balance:* ₹${data.totalBalance}\n\n*--- Hisaab Details ---*\n`;
@@ -233,10 +281,12 @@ function updateScreen(search = "") {
         if (g.toLowerCase().includes(search.toLowerCase())) {
             let data = khataRegister[g], histHTML = "";[...data.history].reverse().forEach(b => {
                 let col = b.type === 'udhar' ? 'text-red' : 'text-green', sign = b.type === 'udhar' ? '+' : '-';
-                histHTML += `<li class="history-item"><div><span>${b.samaan}</span><span class="date-time">🕒 ${b.time}</span></div><div style="text-align:right;"><span class="${col}">${sign} ₹${b.amount}</span><div style="display:flex; gap:5px; margin-top:5px;"><button class="btn-delete-item" onclick="deleteTransactionItem('${g}', ${b.id})">🗑️ Delete</button></div></div></li>`;
+                // 🌟 FIX: Edit aur Delete dono buttons add kiye gaye hain
+                histHTML += `<li class="history-item"><div><span>${b.samaan}</span><span class="date-time">🕒 ${b.time}</span></div><div style="text-align:right;"><span class="${col}">${sign} ₹${b.amount}</span><div style="display:flex; gap:5px; margin-top:5px;"><button class="btn-edit" onclick="editTransaction('${g}', ${b.id})">✏️ Edit</button><button class="btn-delete-item" onclick="deleteTransactionItem('${g}', ${b.id})">🗑️ Delete</button></div></div></li>`;
             });
             let bCol = data.totalBalance > 0 ? "color:#ef4444;" : "color:#10b981;";
-            listDiv.innerHTML += `<div class="account-card"><div class="card-header"><div class="header-row"><h4 onclick="editCustomerName('${g}')" style="cursor:pointer;">👤 ${g} ✏️</h4><span style="font-weight:800; font-size:18px; ${bCol}">₹${data.totalBalance} Baki</span></div><div class="action-buttons"><button class="btn-whatsapp" onclick="sendToWhatsApp('${g}')">📲 WhatsApp</button><button class="btn-delete" onclick="deleteAccount('${g}')">🗑️ Khata Delete</button></div></div><ul class="history-list">${histHTML}</ul></div>`;
+            // 🌟 FIX: Quick Actions (+ Udhar, Paise Jama) Card ke andar add kiye gaye hain
+            listDiv.innerHTML += `<div class="account-card"><div class="card-header"><div class="header-row"><h4 onclick="editCustomerName('${g}')" style="cursor:pointer;">👤 ${g} <span style="font-size:12px;">✏️</span></h4><span style="font-weight:800; font-size:18px; ${bCol}">₹${data.totalBalance} Baki</span></div><div class="action-buttons"><button class="btn-whatsapp" onclick="sendToWhatsApp('${g}')">📲 WhatsApp</button><button class="btn-delete" onclick="deleteAccount('${g}')">🗑️ Khata Delete</button></div><div class="quick-actions"><button class="btn-quick-udhar" onclick="quickTransaction('${g}', 'udhar')">➕ Udhar Likh</button><button class="btn-quick-jama" onclick="quickTransaction('${g}', 'jama')">💰 Jama Kar</button></div></div><ul class="history-list">${histHTML}</ul></div>`;
         }
     }
     calculateShopTotal();
